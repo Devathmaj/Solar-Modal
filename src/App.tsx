@@ -6,7 +6,7 @@ export default function App() {
     <Canvas
       dpr={[1, 2]}
       gl={{ antialias: true }}
-      camera={{ position: [0, 42, 96], fov: 45, near: 0.5, far: 500 }}
+      camera={{ position: [0, 90, 160], fov: 45, near: 0.5, far: 500 }}
     >
       <color attach="background" args={['#000000']} />
       <ambientLight intensity={0.15} />

@@ -1,15 +1,11 @@
-import { useMemo } from 'react'
+import { useEffect, useMemo } from 'react'
 import * as THREE from 'three'
-import { useHighQualityTexture } from './Planet'
+import { Planet, useHighQualityTexture } from './Planet'
 import { PLANET_TEXTURES } from './textures'
+import { SATURN_CONFIG } from './config'
 
-const AXIAL_TILT = 26.73
-const SPHERE_SEGMENTS = 64
-
-interface SaturnProps {
-  radius: number
-  position: [number, number, number]
-}
+const RING_INNER_RATIO = 1.25
+const RING_OUTER_RATIO = 2.3
 
 function createRingGeometry(innerRadius: number, outerRadius: number) {
   const geometry = new THREE.RingGeometry(innerRadius, outerRadius, 128, 1)
@@ -28,23 +24,22 @@ function createRingGeometry(innerRadius: number, outerRadius: number) {
   return geometry
 }
 
-export function Saturn({ radius, position }: SaturnProps) {
-  const planetMap = useHighQualityTexture(PLANET_TEXTURES.saturn)
+export function Saturn() {
   const ringMap = useHighQualityTexture(PLANET_TEXTURES.saturnRings)
 
-  const innerRadius = radius * 1.25
-  const outerRadius = radius * 2.3
   const ringGeometry = useMemo(
-    () => createRingGeometry(innerRadius, outerRadius),
-    [innerRadius, outerRadius],
+    () =>
+      createRingGeometry(
+        SATURN_CONFIG.radius * RING_INNER_RATIO,
+        SATURN_CONFIG.radius * RING_OUTER_RATIO,
+      ),
+    [],
   )
 
+  useEffect(() => () => ringGeometry.dispose(), [ringGeometry])
+
   return (
-    <group position={position} rotation={[0, 0, THREE.MathUtils.degToRad(AXIAL_TILT)]}>
-      <mesh>
-        <sphereGeometry args={[radius, SPHERE_SEGMENTS, SPHERE_SEGMENTS]} />
-        <meshStandardMaterial map={planetMap} roughness={1} metalness={0} />
-      </mesh>
+    <Planet {...SATURN_CONFIG}>
       <mesh geometry={ringGeometry} rotation={[-Math.PI / 2, 0, 0]}>
         <meshStandardMaterial
           map={ringMap}
@@ -55,6 +50,6 @@ export function Saturn({ radius, position }: SaturnProps) {
           metalness={0}
         />
       </mesh>
-    </group>
+    </Planet>
   )
 }

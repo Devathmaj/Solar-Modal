@@ -4,6 +4,8 @@ import * as THREE from 'three'
 import { Sun } from './Sun'
 import { Planet } from './Planet'
 import { Saturn } from './Saturn'
+import { AsteroidBelt } from './AsteroidBelt'
+import { Starfield } from './Starfield'
 import { PLANET_CONFIGS } from './config'
 
 const ZOOM_TARGET = new THREE.Vector3(0, 0, -8)
@@ -55,11 +57,13 @@ export function SolarSystem() {
   return (
     <Suspense fallback={null}>
       <CameraControls />
+      <Starfield />
       <Sun />
       {PLANET_CONFIGS.map((config) => (
         <Planet key={config.name} {...config} />
       ))}
       <Saturn />
+      <AsteroidBelt />
     </Suspense>
   )
 }

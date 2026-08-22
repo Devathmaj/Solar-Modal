@@ -9,4 +9,5 @@ export const PLANET_TEXTURES = {
   saturnRings: '/assets/planets/saturn/2k_saturn_ring_alpha.png',
   uranus: '/assets/planets/uranus/2k_uranus.jpg',
   neptune: '/assets/planets/neptune/2k_neptune.jpg',
+  moon: '/assets/planets/moon/2k_moon.jpg',
 }

@@ -11,6 +11,10 @@ export interface PlanetConfig {
   initialAngle: number
 }
 
+export const MARS_ORBIT_RADIUS = 31
+export const JUPITER_ORBIT_RADIUS = 45
+export const NEPTUNE_ORBIT_RADIUS = 84
+
 export const PLANET_CONFIGS: PlanetConfig[] = [
   {
     name: 'Mercury',
@@ -33,34 +37,14 @@ export const PLANET_CONFIGS: PlanetConfig[] = [
     initialAngle: -160,
   },
   {
-    name: 'Earth',
-    texture: PLANET_TEXTURES.earth,
-    radius: 1.8,
-    orbitRadius: 25,
-    revolutionSpeed: 0.045,
-    rotationSpeed: 0.15,
-    axialTilt: 23.4,
-    initialAngle: -5,
-  },
-  {
     name: 'Mars',
     texture: PLANET_TEXTURES.mars,
     radius: 1.3,
-    orbitRadius: 31,
+    orbitRadius: MARS_ORBIT_RADIUS,
     revolutionSpeed: 0.036,
     rotationSpeed: 0.14,
     axialTilt: 25.2,
     initialAngle: 185,
-  },
-  {
-    name: 'Jupiter',
-    texture: PLANET_TEXTURES.jupiter,
-    radius: 5.2,
-    orbitRadius: 45,
-    revolutionSpeed: 0.02,
-    rotationSpeed: 0.25,
-    axialTilt: 3.1,
-    initialAngle: 160,
   },
   {
     name: 'Uranus',
@@ -76,13 +60,35 @@ export const PLANET_CONFIGS: PlanetConfig[] = [
     name: 'Neptune',
     texture: PLANET_TEXTURES.neptune,
     radius: 2.5,
-    orbitRadius: 84,
+    orbitRadius: NEPTUNE_ORBIT_RADIUS,
     revolutionSpeed: 0.006,
     rotationSpeed: 0.13,
     axialTilt: 28.3,
     initialAngle: 55,
   },
 ]
+
+export const EARTH_CONFIG: PlanetConfig = {
+  name: 'Earth',
+  texture: PLANET_TEXTURES.earth,
+  radius: 1.8,
+  orbitRadius: 25,
+  revolutionSpeed: 0.045,
+  rotationSpeed: 0.15,
+  axialTilt: 23.4,
+  initialAngle: -5,
+}
+
+export const JUPITER_CONFIG: PlanetConfig = {
+  name: 'Jupiter',
+  texture: PLANET_TEXTURES.jupiter,
+  radius: 5.2,
+  orbitRadius: JUPITER_ORBIT_RADIUS,
+  revolutionSpeed: 0.02,
+  rotationSpeed: 0.25,
+  axialTilt: 3.1,
+  initialAngle: 160,
+}
 
 export const SATURN_CONFIG: PlanetConfig = {
   name: 'Saturn',

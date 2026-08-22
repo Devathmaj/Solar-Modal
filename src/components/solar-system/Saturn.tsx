@@ -3,6 +3,7 @@ import * as THREE from 'three'
 import { Planet, useHighQualityTexture } from './Planet'
 import { PLANET_TEXTURES } from './textures'
 import { SATURN_CONFIG } from './config'
+import { SaturnMoons } from './SaturnMoons'
 
 const RING_INNER_RATIO = 1.25
 const RING_OUTER_RATIO = 2.3
@@ -50,6 +51,7 @@ export function Saturn() {
           metalness={0}
         />
       </mesh>
+      <SaturnMoons />
     </Planet>
   )
 }

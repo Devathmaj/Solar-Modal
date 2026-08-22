@@ -5,9 +5,13 @@ import { Sun } from './Sun'
 import { Planet } from './Planet'
 import { Saturn } from './Saturn'
 import { AsteroidBelt } from './AsteroidBelt'
+import { KuiperBelt } from './KuiperBelt'
+import { ZodiacalLight } from './ZodiacalLight'
+import { EarthMoon } from './EarthMoon'
+import { GalileanMoons } from './GalileanMoons'
 import { Starfield } from './Starfield'
 import { MilkyWay } from './MilkyWay'
-import { PLANET_CONFIGS } from './config'
+import { PLANET_CONFIGS, EARTH_CONFIG, JUPITER_CONFIG } from './config'
 import {
   MOVEMENT_KEYS,
   pressedMovementKeys,
@@ -262,11 +266,19 @@ export function SolarSystem() {
       <MilkyWay />
       <Starfield />
       <Sun />
+      <ZodiacalLight />
       {PLANET_CONFIGS.map((config) => (
         <Planet key={config.name} {...config} />
       ))}
+      <Planet {...EARTH_CONFIG}>
+        <EarthMoon planetRadius={EARTH_CONFIG.radius} />
+      </Planet>
+      <Planet {...JUPITER_CONFIG}>
+        <GalileanMoons />
+      </Planet>
       <Saturn />
       <AsteroidBelt />
+      <KuiperBelt />
     </Suspense>
   )
 }

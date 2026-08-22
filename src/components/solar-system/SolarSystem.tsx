@@ -13,10 +13,18 @@ import {
   pressedMovementKeys,
   releaseAllMovementKeys,
 } from './movementInput'
+import { subscribeToReset } from './cameraReset'
 
 const UP = new THREE.Vector3(0, 1, 0)
 const INITIAL_POSITION = new THREE.Vector3(0, 90, 160)
 const INITIAL_VIEW_TARGET = new THREE.Vector3(0, 0, -8)
+const INITIAL_ORIENTATION = (() => {
+  const euler = new THREE.Euler().setFromRotationMatrix(
+    new THREE.Matrix4().lookAt(INITIAL_POSITION, INITIAL_VIEW_TARGET, UP),
+    'YXZ',
+  )
+  return { yaw: euler.y, pitch: euler.x }
+})()
 const MIN_CAMERA_RADIUS = 12
 const MAX_CAMERA_RADIUS = 300
 const PITCH_LIMIT = THREE.MathUtils.degToRad(85)
@@ -26,6 +34,7 @@ const ZOOM_SENSITIVITY = 0.0015
 const FLIGHT_SPEED = 0.7
 const ROTATION_DAMPING = 9
 const MOVEMENT_DAMPING = 11
+const RESET_MAX_DRAG_PIXELS = 6
 
 const forwardVector = new THREE.Vector3()
 const rightVector = new THREE.Vector3()
@@ -35,24 +44,29 @@ function CameraControls() {
   const camera = useThree((state) => state.camera)
   const gl = useThree((state) => state.gl)
 
-  const orientation = useRef(
-    (() => {
-      const initial = new THREE.Euler().setFromRotationMatrix(
-        new THREE.Matrix4().lookAt(INITIAL_POSITION, INITIAL_VIEW_TARGET, UP),
-        'YXZ',
-      )
-      return {
-        yaw: initial.y,
-        pitch: initial.x,
-        targetYaw: initial.y,
-        targetPitch: initial.x,
-      }
-    })(),
-  )
+  const orientation = useRef({
+    yaw: INITIAL_ORIENTATION.yaw,
+    pitch: INITIAL_ORIENTATION.pitch,
+    targetYaw: INITIAL_ORIENTATION.yaw,
+    targetPitch: INITIAL_ORIENTATION.pitch,
+  })
 
   const desiredPosition = useRef(INITIAL_POSITION.clone())
-  const pointerTraces = useRef(new Map<number, { x: number; y: number }>())
+  const pointerTraces = useRef(new Map<number, { x: number; y: number; button: number }>())
   const pinchSpan = useRef(0)
+  const rightButtonDragDistance = useRef<number | null>(null)
+
+  const resetView = () => {
+    releaseAllMovementKeys()
+    desiredPosition.current.copy(INITIAL_POSITION)
+    camera.position.copy(INITIAL_POSITION)
+    const orientationState = orientation.current
+    orientationState.targetYaw = INITIAL_ORIENTATION.yaw
+    orientationState.targetPitch = INITIAL_ORIENTATION.pitch
+    orientationState.yaw = INITIAL_ORIENTATION.yaw
+    orientationState.pitch = INITIAL_ORIENTATION.pitch
+    camera.rotation.set(INITIAL_ORIENTATION.pitch, INITIAL_ORIENTATION.yaw, 0)
+  }
 
   const updateAxes = () => {
     const orientationState = orientation.current
@@ -116,10 +130,23 @@ function CameraControls() {
 
     const handleContextMenu = (event: MouseEvent) => {
       event.preventDefault()
+      if (
+        event.button === 2 &&
+        rightButtonDragDistance.current !== null &&
+        rightButtonDragDistance.current <= RESET_MAX_DRAG_PIXELS
+      ) {
+        resetView()
+      }
+      rightButtonDragDistance.current = null
     }
 
     const handlePointerDown = (event: PointerEvent) => {
-      pointerTraces.current.set(event.pointerId, { x: event.clientX, y: event.clientY })
+      pointerTraces.current.set(event.pointerId, {
+        x: event.clientX,
+        y: event.clientY,
+        button: event.button,
+      })
+      if (event.button === 2) rightButtonDragDistance.current = 0
       domElement.setPointerCapture(event.pointerId)
       domElement.style.cursor = 'grabbing'
       if (pointerTraces.current.size === 2) pinchSpan.current = 0
@@ -132,6 +159,9 @@ function CameraControls() {
       const deltaY = event.clientY - trace.y
       trace.x = event.clientX
       trace.y = event.clientY
+      if (trace.button === 2 && rightButtonDragDistance.current !== null) {
+        rightButtonDragDistance.current += Math.abs(deltaX) + Math.abs(deltaY)
+      }
 
       if (pointerTraces.current.size >= 2) {
         const points = [...pointerTraces.current.values()]
@@ -168,6 +198,7 @@ function CameraControls() {
     domElement.addEventListener('pointerup', endPointer)
     domElement.addEventListener('pointercancel', endPointer)
     domElement.addEventListener('wheel', handleWheel, { passive: false })
+    const unsubscribeReset = subscribeToReset(resetView)
     return () => {
       window.removeEventListener('keydown', handleKeyDown)
       window.removeEventListener('keyup', handleKeyUp)
@@ -178,6 +209,7 @@ function CameraControls() {
       domElement.removeEventListener('pointerup', endPointer)
       domElement.removeEventListener('pointercancel', endPointer)
       domElement.removeEventListener('wheel', handleWheel)
+      unsubscribeReset()
       domElement.style.cursor = ''
       domElement.style.touchAction = ''
     }

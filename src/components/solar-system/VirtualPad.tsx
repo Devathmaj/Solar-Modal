@@ -4,6 +4,7 @@ import {
   releaseAllMovementKeys,
   releaseMovementKey,
 } from './movementInput'
+import { triggerReset } from './cameraReset'
 
 const DPAD_BUTTONS: Array<{ code: string; glyph: string; positionClass: string }> = [
   { code: 'KeyW', glyph: '▲', positionClass: 'vpad-up' },
@@ -83,6 +84,15 @@ export function VirtualPad() {
         onClick={() => setVisible((value) => !value)}
       >
         ✥
+      </button>
+      <button
+        type="button"
+        aria-label="Reset camera to default view"
+        title="Reset view (right-click)"
+        className="vpad-reset"
+        onClick={() => triggerReset()}
+      >
+        ⟲
       </button>
       {visible && (
         <div className="vpad">

@@ -1,6 +1,6 @@
-import { Suspense, useEffect, useRef } from 'react'
-import { useFrame, useThree } from '@react-three/fiber'
-import * as THREE from 'three'
+import { Suspense, useEffect, useRef, type ComponentRef } from 'react'
+import { useThree } from '@react-three/fiber'
+import { OrbitControls } from '@react-three/drei'
 import { Sun } from './Sun'
 import { Planet } from './Planet'
 import { Saturn } from './Saturn'
@@ -8,49 +8,49 @@ import { AsteroidBelt } from './AsteroidBelt'
 import { Starfield } from './Starfield'
 import { PLANET_CONFIGS } from './config'
 
-const ZOOM_TARGET = new THREE.Vector3(0, 0, -8)
+const CAMERA_TARGET: [number, number, number] = [0, 0, -8]
 const ZOOM_MIN_DISTANCE = 14
 const ZOOM_MAX_DISTANCE = 280
-const ZOOM_SENSITIVITY = 0.0015
-const ZOOM_DAMPING = 5
+const POLAR_ANGLE_LIMIT = 0.2
 
 function CameraControls() {
-  const camera = useThree((state) => state.camera)
   const gl = useThree((state) => state.gl)
-  const targetDistance = useRef(camera.position.distanceTo(ZOOM_TARGET))
+  const controlsRef = useRef<ComponentRef<typeof OrbitControls>>(null)
 
   useEffect(() => {
-    camera.lookAt(ZOOM_TARGET)
+    const controls = controlsRef.current
+    if (!controls) return
     const domElement = gl.domElement
-    const handleWheel = (event: WheelEvent) => {
-      event.preventDefault()
-      const deltaY = event.deltaMode === 1 ? event.deltaY * 32 : event.deltaY
-      targetDistance.current = THREE.MathUtils.clamp(
-        targetDistance.current * Math.exp(deltaY * ZOOM_SENSITIVITY),
-        ZOOM_MIN_DISTANCE,
-        ZOOM_MAX_DISTANCE,
-      )
+    domElement.style.cursor = 'grab'
+    const handleStart = () => {
+      domElement.style.cursor = 'grabbing'
     }
-    domElement.addEventListener('wheel', handleWheel, { passive: false })
-    return () => domElement.removeEventListener('wheel', handleWheel)
-  }, [camera, gl])
+    const handleEnd = () => {
+      domElement.style.cursor = 'grab'
+    }
+    controls.addEventListener('start', handleStart)
+    controls.addEventListener('end', handleEnd)
+    return () => {
+      controls.removeEventListener('start', handleStart)
+      controls.removeEventListener('end', handleEnd)
+      domElement.style.cursor = ''
+    }
+  }, [gl])
 
-  useFrame((_, delta) => {
-    const currentDistance = camera.position.distanceTo(ZOOM_TARGET)
-    const nextDistance = THREE.MathUtils.damp(
-      currentDistance,
-      targetDistance.current,
-      ZOOM_DAMPING,
-      delta,
-    )
-    if (Math.abs(nextDistance - currentDistance) < 0.0005) return
-    camera.position
-      .sub(ZOOM_TARGET)
-      .multiplyScalar(nextDistance / currentDistance)
-      .add(ZOOM_TARGET)
-  })
-
-  return null
+  return (
+    <OrbitControls
+      ref={controlsRef}
+      makeDefault
+      target={CAMERA_TARGET}
+      enablePan={false}
+      enableDamping
+      rotateSpeed={0.85}
+      minDistance={ZOOM_MIN_DISTANCE}
+      maxDistance={ZOOM_MAX_DISTANCE}
+      minPolarAngle={POLAR_ANGLE_LIMIT}
+      maxPolarAngle={Math.PI - POLAR_ANGLE_LIMIT}
+    />
+  )
 }
 
 export function SolarSystem() {

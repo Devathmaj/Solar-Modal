@@ -6,6 +6,7 @@ import { Planet } from './Planet'
 import { Saturn } from './Saturn'
 import { AsteroidBelt } from './AsteroidBelt'
 import { Starfield } from './Starfield'
+import { MilkyWay } from './MilkyWay'
 import { PLANET_CONFIGS } from './config'
 
 const CAMERA_TARGET: [number, number, number] = [0, 0, -8]
@@ -57,6 +58,7 @@ export function SolarSystem() {
   return (
     <Suspense fallback={null}>
       <CameraControls />
+      <MilkyWay />
       <Starfield />
       <Sun />
       {PLANET_CONFIGS.map((config) => (

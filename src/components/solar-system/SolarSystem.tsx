@@ -1,6 +1,6 @@
-import { Suspense, useEffect, useRef, type ComponentRef } from 'react'
-import { useThree } from '@react-three/fiber'
-import { OrbitControls } from '@react-three/drei'
+import { Suspense, useEffect, useRef } from 'react'
+import { useFrame, useThree } from '@react-three/fiber'
+import * as THREE from 'three'
 import { Sun } from './Sun'
 import { Planet } from './Planet'
 import { Saturn } from './Saturn'
@@ -8,50 +8,219 @@ import { AsteroidBelt } from './AsteroidBelt'
 import { Starfield } from './Starfield'
 import { MilkyWay } from './MilkyWay'
 import { PLANET_CONFIGS } from './config'
+import {
+  MOVEMENT_KEYS,
+  pressedMovementKeys,
+  releaseAllMovementKeys,
+} from './movementInput'
 
-const CAMERA_TARGET: [number, number, number] = [0, 0, -8]
-const ZOOM_MIN_DISTANCE = 14
-const ZOOM_MAX_DISTANCE = 280
-const POLAR_ANGLE_LIMIT = 0.2
+const UP = new THREE.Vector3(0, 1, 0)
+const INITIAL_POSITION = new THREE.Vector3(0, 90, 160)
+const INITIAL_VIEW_TARGET = new THREE.Vector3(0, 0, -8)
+const MIN_CAMERA_RADIUS = 12
+const MAX_CAMERA_RADIUS = 300
+const PITCH_LIMIT = THREE.MathUtils.degToRad(85)
+const LOOK_SENSITIVITY = 0.0032
+const PITCH_SENSITIVITY = 0.0016
+const ZOOM_SENSITIVITY = 0.0015
+const FLIGHT_SPEED = 0.7
+const ROTATION_DAMPING = 9
+const MOVEMENT_DAMPING = 11
+
+const forwardVector = new THREE.Vector3()
+const rightVector = new THREE.Vector3()
+const candidatePosition = new THREE.Vector3()
 
 function CameraControls() {
+  const camera = useThree((state) => state.camera)
   const gl = useThree((state) => state.gl)
-  const controlsRef = useRef<ComponentRef<typeof OrbitControls>>(null)
+
+  const orientation = useRef(
+    (() => {
+      const initial = new THREE.Euler().setFromRotationMatrix(
+        new THREE.Matrix4().lookAt(INITIAL_POSITION, INITIAL_VIEW_TARGET, UP),
+        'YXZ',
+      )
+      return {
+        yaw: initial.y,
+        pitch: initial.x,
+        targetYaw: initial.y,
+        targetPitch: initial.x,
+      }
+    })(),
+  )
+
+  const desiredPosition = useRef(INITIAL_POSITION.clone())
+  const pointerTraces = useRef(new Map<number, { x: number; y: number }>())
+  const pinchSpan = useRef(0)
+
+  const updateAxes = () => {
+    const orientationState = orientation.current
+    const cosPitch = Math.cos(orientationState.targetPitch)
+    forwardVector.set(
+      -Math.sin(orientationState.targetYaw) * cosPitch,
+      Math.sin(orientationState.targetPitch),
+      -Math.cos(orientationState.targetYaw) * cosPitch,
+    )
+    rightVector.crossVectors(forwardVector, UP).normalize()
+  }
+
+  const enforceRadius = () => {
+    const radius = candidatePosition.length()
+    if (radius < MIN_CAMERA_RADIUS) candidatePosition.multiplyScalar(MIN_CAMERA_RADIUS / radius)
+    else if (radius > MAX_CAMERA_RADIUS) candidatePosition.multiplyScalar(MAX_CAMERA_RADIUS / radius)
+  }
+
+  const zoomBy = (factor: number) => {
+    updateAxes()
+    const step = desiredPosition.current.length() * (factor - 1)
+    candidatePosition.copy(desiredPosition.current).addScaledVector(forwardVector, step)
+    enforceRadius()
+    desiredPosition.current.copy(candidatePosition)
+  }
+
+  const lookBy = (deltaX: number, deltaY: number) => {
+    const orientationState = orientation.current
+    orientationState.targetYaw -= deltaX * LOOK_SENSITIVITY
+    orientationState.targetPitch = THREE.MathUtils.clamp(
+      orientationState.targetPitch - deltaY * PITCH_SENSITIVITY,
+      -PITCH_LIMIT,
+      PITCH_LIMIT,
+    )
+  }
 
   useEffect(() => {
-    const controls = controlsRef.current
-    if (!controls) return
+    camera.position.copy(INITIAL_POSITION)
+    camera.rotation.order = 'YXZ'
+    camera.rotation.set(orientation.current.pitch, orientation.current.yaw, 0)
+
     const domElement = gl.domElement
     domElement.style.cursor = 'grab'
-    const handleStart = () => {
-      domElement.style.cursor = 'grabbing'
-    }
-    const handleEnd = () => {
-      domElement.style.cursor = 'grab'
-    }
-    controls.addEventListener('start', handleStart)
-    controls.addEventListener('end', handleEnd)
-    return () => {
-      controls.removeEventListener('start', handleStart)
-      controls.removeEventListener('end', handleEnd)
-      domElement.style.cursor = ''
-    }
-  }, [gl])
+    domElement.style.touchAction = 'none'
 
-  return (
-    <OrbitControls
-      ref={controlsRef}
-      makeDefault
-      target={CAMERA_TARGET}
-      enablePan={false}
-      enableDamping
-      rotateSpeed={0.85}
-      minDistance={ZOOM_MIN_DISTANCE}
-      maxDistance={ZOOM_MAX_DISTANCE}
-      minPolarAngle={POLAR_ANGLE_LIMIT}
-      maxPolarAngle={Math.PI - POLAR_ANGLE_LIMIT}
-    />
-  )
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.ctrlKey || event.metaKey || event.altKey) return
+      if (MOVEMENT_KEYS[event.code]) {
+        event.preventDefault()
+        pressedMovementKeys.add(event.code)
+      }
+    }
+
+    const handleKeyUp = (event: KeyboardEvent) => {
+      pressedMovementKeys.delete(event.code)
+    }
+
+    const handleWindowBlur = () => {
+      releaseAllMovementKeys()
+    }
+
+    const handleContextMenu = (event: MouseEvent) => {
+      event.preventDefault()
+    }
+
+    const handlePointerDown = (event: PointerEvent) => {
+      pointerTraces.current.set(event.pointerId, { x: event.clientX, y: event.clientY })
+      domElement.setPointerCapture(event.pointerId)
+      domElement.style.cursor = 'grabbing'
+      if (pointerTraces.current.size === 2) pinchSpan.current = 0
+    }
+
+    const handlePointerMove = (event: PointerEvent) => {
+      const trace = pointerTraces.current.get(event.pointerId)
+      if (!trace) return
+      const deltaX = event.clientX - trace.x
+      const deltaY = event.clientY - trace.y
+      trace.x = event.clientX
+      trace.y = event.clientY
+
+      if (pointerTraces.current.size >= 2) {
+        const points = [...pointerTraces.current.values()]
+        const span = Math.hypot(points[0].x - points[1].x, points[0].y - points[1].y)
+        if (pinchSpan.current > 0 && span > 0) zoomBy(pinchSpan.current / span)
+        pinchSpan.current = span
+        return
+      }
+
+      lookBy(deltaX, deltaY)
+    }
+
+    const endPointer = (event: PointerEvent) => {
+      pointerTraces.current.delete(event.pointerId)
+      pinchSpan.current = 0
+      if (domElement.hasPointerCapture(event.pointerId)) {
+        domElement.releasePointerCapture(event.pointerId)
+      }
+      if (pointerTraces.current.size === 0) domElement.style.cursor = 'grab'
+    }
+
+    const handleWheel = (event: WheelEvent) => {
+      event.preventDefault()
+      const deltaY = event.deltaMode === 1 ? event.deltaY * 32 : event.deltaY
+      zoomBy(Math.exp(deltaY * ZOOM_SENSITIVITY))
+    }
+
+    window.addEventListener('keydown', handleKeyDown)
+    window.addEventListener('keyup', handleKeyUp)
+    window.addEventListener('blur', handleWindowBlur)
+    domElement.addEventListener('contextmenu', handleContextMenu)
+    domElement.addEventListener('pointerdown', handlePointerDown)
+    domElement.addEventListener('pointermove', handlePointerMove)
+    domElement.addEventListener('pointerup', endPointer)
+    domElement.addEventListener('pointercancel', endPointer)
+    domElement.addEventListener('wheel', handleWheel, { passive: false })
+    return () => {
+      window.removeEventListener('keydown', handleKeyDown)
+      window.removeEventListener('keyup', handleKeyUp)
+      window.removeEventListener('blur', handleWindowBlur)
+      domElement.removeEventListener('contextmenu', handleContextMenu)
+      domElement.removeEventListener('pointerdown', handlePointerDown)
+      domElement.removeEventListener('pointermove', handlePointerMove)
+      domElement.removeEventListener('pointerup', endPointer)
+      domElement.removeEventListener('pointercancel', endPointer)
+      domElement.removeEventListener('wheel', handleWheel)
+      domElement.style.cursor = ''
+      domElement.style.touchAction = ''
+    }
+  }, [camera, gl])
+
+  useFrame((_, delta) => {
+    const orientationState = orientation.current
+
+    const yaw = THREE.MathUtils.damp(orientationState.yaw, orientationState.targetYaw, ROTATION_DAMPING, delta)
+    const pitch = THREE.MathUtils.damp(orientationState.pitch, orientationState.targetPitch, ROTATION_DAMPING, delta)
+    if (yaw !== orientationState.yaw || pitch !== orientationState.pitch) {
+      orientationState.yaw = yaw
+      orientationState.pitch = pitch
+      camera.rotation.set(pitch, yaw, 0)
+    }
+
+    let strafe = 0
+    let forward = 0
+    let lift = 0
+    for (const code of pressedMovementKeys) {
+      const direction = MOVEMENT_KEYS[code]
+      if (direction) {
+        strafe += direction[0]
+        forward += direction[1]
+        lift += direction[2]
+      }
+    }
+
+    if (strafe !== 0 || forward !== 0 || lift !== 0) {
+      updateAxes()
+      const step = desiredPosition.current.length() * FLIGHT_SPEED * delta
+      candidatePosition.copy(desiredPosition.current)
+      candidatePosition.addScaledVector(forwardVector, forward * step)
+      candidatePosition.addScaledVector(rightVector, strafe * step)
+      candidatePosition.addScaledVector(UP, lift * step)
+      enforceRadius()
+      desiredPosition.current.copy(candidatePosition)
+    }
+
+    camera.position.lerp(desiredPosition.current, 1 - Math.exp(-MOVEMENT_DAMPING * delta))
+  })
+
+  return null
 }
 
 export function SolarSystem() {

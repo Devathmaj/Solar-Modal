@@ -1,6 +1,7 @@
-import { useRef } from 'react'
+import { useEffect, useRef } from 'react'
 import { useFrame } from '@react-three/fiber'
 import * as THREE from 'three'
+import { registerCollider, syncColliderWithObject, unregisterCollider } from './colliders'
 
 // Saturn's major moons. Distances are compressed versus reality but preserve
 // the real ordering (Enceladus innermost, Titan outermost of the three) and
@@ -15,12 +16,22 @@ const MOONS = [
 
 export function SaturnMoons() {
   const pivotRefs = useRef<Array<THREE.Group | null>>([])
+  const meshRefs = useRef<Array<THREE.Mesh | null>>([])
+
+  useEffect(() => {
+    MOONS.forEach((moon) => registerCollider(`moon-saturn-${moon.name}`, moon.radius))
+    return () => {
+      MOONS.forEach((moon) => unregisterCollider(`moon-saturn-${moon.name}`))
+    }
+  }, [])
 
   useFrame((state) => {
     const elapsed = state.clock.elapsedTime
     MOONS.forEach((moon, index) => {
       const pivot = pivotRefs.current[index]
       if (pivot) pivot.rotation.y = moon.startAngle + moon.speed * elapsed
+      const mesh = meshRefs.current[index]
+      if (mesh) syncColliderWithObject(`moon-saturn-${moon.name}`, mesh)
     })
   })
 
@@ -33,7 +44,12 @@ export function SaturnMoons() {
             pivotRefs.current[index] = node
           }}
         >
-          <mesh position={[moon.distance, 0, 0]}>
+          <mesh
+            ref={(node) => {
+              meshRefs.current[index] = node
+            }}
+            position={[moon.distance, 0, 0]}
+          >
             <sphereGeometry args={[moon.radius, 24, 24]} />
             <meshStandardMaterial color={moon.color} roughness={1} metalness={0} />
           </mesh>

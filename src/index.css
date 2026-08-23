@@ -122,3 +122,101 @@ body,
   grid-column: 3;
   grid-row: 2;
 }
+
+/* ------------------------------------------------------------------ */
+/* Planet worlds                                                       */
+/* ------------------------------------------------------------------ */
+
+.world-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 60;
+  pointer-events: none;
+  background: #000;
+  opacity: 0;
+}
+
+.world-hud {
+  position: fixed;
+  top: 16px;
+  left: 16px;
+  z-index: 30;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.world-return {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 16px;
+  border-radius: 12px;
+  background: rgba(18, 21, 28, 0.66);
+  color: #dfe6f2;
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  font-size: 13px;
+  letter-spacing: 0.04em;
+  cursor: pointer;
+  user-select: none;
+  -webkit-user-select: none;
+  backdrop-filter: blur(6px);
+  transition: background 160ms ease, border-color 160ms ease;
+}
+
+.world-return:hover {
+  background: rgba(40, 48, 62, 0.78);
+  border-color: rgba(255, 255, 255, 0.26);
+}
+
+.world-return-arrow {
+  font-size: 15px;
+  line-height: 1;
+}
+
+.world-hud-title {
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.32em;
+  color: rgba(223, 230, 242, 0.55);
+  text-transform: uppercase;
+}
+
+/* Floating portfolio placeholder anchored inside each world */
+.world-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  padding: 18px 26px;
+  border-radius: 16px;
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  background: rgba(10, 13, 18, 0.5);
+  backdrop-filter: blur(8px);
+  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.35);
+  white-space: nowrap;
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+.world-card-section {
+  font-size: 11px;
+  letter-spacing: 0.3em;
+  text-transform: uppercase;
+  color: rgba(223, 230, 242, 0.6);
+}
+
+.world-card-title {
+  margin: 0;
+  font-size: 22px;
+  font-weight: 700;
+  letter-spacing: 0.42em;
+  text-indent: 0.42em;
+  color: #f2f5fb;
+}
+
+.world-card-hint {
+  font-size: 11px;
+  letter-spacing: 0.06em;
+  color: rgba(223, 230, 242, 0.4);
+}

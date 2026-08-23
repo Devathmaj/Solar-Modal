@@ -81,6 +81,28 @@ Generated in code; nothing was downloaded for these:
 
 ---
 
+## 6. Planet-world environments (interactive worlds phase)
+
+No new files were downloaded for this feature. Every world environment is
+either fully procedural in code or reuses the §1 texture set already present
+under `public/assets/planets/`:
+
+- **Sky domes** — custom gradient shader (`WorldEnvironment.tsx`, `SkyDome`)
+- **Gas-giant atmospheres** (Jupiter/Saturn/Uranus/Neptune) — canvas-generated
+  cloud-band textures + stacked drifting translucent planes (`worldAssets.ts`,
+  `GasLayers`); Great Red Spot / Dark Spot are canvas radial gradients
+- **Rocky terrain** (Mercury/Mars/Earth) — noise-displaced ground planes that
+  tile the existing `2k_mercury.jpg` / `2k_mars.jpg` / `2k_earth_daymap.jpg`
+  maps (`RockyGround`)
+- **Cloud decks & haze** — billboarded sprites using the existing procedural
+  glow texture (`CloudPuffs`, `ParticleField`)
+- **Stars in world skies** — random point shells (`StarPoints`); distant Sun
+  as seen from Mars/Mercury is the same procedural glow sprite
+
+Files: `src/components/planet-worlds/*`, `src/config/planetWorlds.ts`.
+
+---
+
 ## Attribution quick-reference
 
 ```

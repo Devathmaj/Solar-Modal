@@ -3,6 +3,10 @@ import { useFrame, useThree } from '@react-three/fiber'
 import { useTexture } from '@react-three/drei'
 import * as THREE from 'three'
 import type { PlanetConfig } from './config'
+import { registerCollider, syncColliderWithObject, unregisterCollider } from './colliders'
+import { bodyIdForPlanetName } from '../../config/planetWorlds'
+import { isInputLocked, requestEnter } from '../planet-worlds/worldState'
+import { isTap } from '../planet-worlds/pointerGuard'
 
 const SPHERE_SEGMENTS = 64
 const ORBIT_LINE_SEGMENTS = 256
@@ -55,6 +59,7 @@ export function useHighQualityTexture(path: string) {
 }
 
 export function Planet({
+  name,
   texture,
   radius,
   orbitRadius,
@@ -65,25 +70,67 @@ export function Planet({
   children,
 }: PlanetProps) {
   const map = useHighQualityTexture(texture)
+  const gl = useThree((state) => state.gl)
   const orbitRef = useRef<THREE.Group>(null!)
+  const anchorRef = useRef<THREE.Group>(null!)
   const spinnerRef = useRef<THREE.Mesh>(null!)
 
   const startAngle = THREE.MathUtils.degToRad(initialAngle)
   const tiltAngle = THREE.MathUtils.degToRad(axialTilt)
+  const bodyId = bodyIdForPlanetName(name)
+
+  useEffect(() => {
+    registerCollider(`planet-${name}`, radius)
+    return () => unregisterCollider(`planet-${name}`)
+  }, [name, radius])
+
+  // Very subtle integrated highlight — no artificial outlines or labels.
+  const setHighlight = (enabled: boolean) => {
+    const material = spinnerRef.current?.material as THREE.MeshStandardMaterial | undefined
+    if (!material) return
+    if (enabled) {
+      material.emissive.set('#ffffff')
+      material.emissiveIntensity = 0.08
+    } else {
+      material.emissive.set('#000000')
+      material.emissiveIntensity = 1
+    }
+  }
 
   useFrame((state) => {
     const elapsed = state.clock.elapsedTime
     orbitRef.current.rotation.y = startAngle + revolutionSpeed * elapsed
     spinnerRef.current.rotation.y = rotationSpeed * elapsed
+    syncColliderWithObject(`planet-${name}`, anchorRef.current)
   })
 
   return (
     <>
       <OrbitPath radius={orbitRadius} />
       <group ref={orbitRef}>
-        <group position={[orbitRadius, 0, 0]}>
+        <group ref={anchorRef} position={[orbitRadius, 0, 0]}>
           <group rotation={[0, 0, tiltAngle]}>
-            <mesh ref={spinnerRef}>
+            <mesh
+              ref={spinnerRef}
+              onPointerOver={(event) => {
+                event.stopPropagation()
+                if (!bodyId || isInputLocked()) return
+                setHighlight(true)
+                gl.domElement.style.cursor = 'pointer'
+              }}
+              onPointerOut={() => {
+                setHighlight(false)
+                gl.domElement.style.cursor = ''
+              }}
+              onClick={(event) => {
+                event.stopPropagation()
+                if (!bodyId || isInputLocked()) return
+                if (!isTap(event.nativeEvent.clientX, event.nativeEvent.clientY)) return
+                setHighlight(false)
+                gl.domElement.style.cursor = ''
+                requestEnter(bodyId)
+              }}
+            >
               <sphereGeometry args={[radius, SPHERE_SEGMENTS, SPHERE_SEGMENTS]} />
               <meshStandardMaterial map={map} roughness={1} metalness={0} />
             </mesh>

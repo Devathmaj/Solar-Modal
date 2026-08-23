@@ -1,4 +1,4 @@
-import { Suspense, useEffect, useRef } from 'react'
+import { Suspense, useEffect, useRef, useSyncExternalStore } from 'react'
 import { useFrame, useThree } from '@react-three/fiber'
 import * as THREE from 'three'
 import { Sun } from './Sun'
@@ -18,6 +18,12 @@ import {
   releaseAllMovementKeys,
 } from './movementInput'
 import { subscribeToReset } from './cameraReset'
+import { subscribeExternalCameraSync } from './externalCamera'
+import {
+  getWorldSnapshot,
+  isInputLocked,
+  subscribeWorld,
+} from '../planet-worlds/worldState'
 
 const UP = new THREE.Vector3(0, 1, 0)
 const INITIAL_POSITION = new THREE.Vector3(0, 90, 160)
@@ -43,6 +49,7 @@ const RESET_MAX_DRAG_PIXELS = 6
 const forwardVector = new THREE.Vector3()
 const rightVector = new THREE.Vector3()
 const candidatePosition = new THREE.Vector3()
+const restoreEuler = new THREE.Euler()
 
 function CameraControls() {
   const camera = useThree((state) => state.camera)
@@ -117,6 +124,7 @@ function CameraControls() {
     domElement.style.touchAction = 'none'
 
     const handleKeyDown = (event: KeyboardEvent) => {
+      if (isInputLocked()) return
       if (event.ctrlKey || event.metaKey || event.altKey) return
       if (MOVEMENT_KEYS[event.code]) {
         event.preventDefault()
@@ -133,6 +141,7 @@ function CameraControls() {
     }
 
     const handleContextMenu = (event: MouseEvent) => {
+      if (isInputLocked()) return
       event.preventDefault()
       if (
         event.button === 2 &&
@@ -145,6 +154,7 @@ function CameraControls() {
     }
 
     const handlePointerDown = (event: PointerEvent) => {
+      if (isInputLocked()) return
       pointerTraces.current.set(event.pointerId, {
         x: event.clientX,
         y: event.clientY,
@@ -157,6 +167,7 @@ function CameraControls() {
     }
 
     const handlePointerMove = (event: PointerEvent) => {
+      if (isInputLocked()) return
       const trace = pointerTraces.current.get(event.pointerId)
       if (!trace) return
       const deltaX = event.clientX - trace.x
@@ -188,10 +199,34 @@ function CameraControls() {
     }
 
     const handleWheel = (event: WheelEvent) => {
+      if (isInputLocked()) return
       event.preventDefault()
       const deltaY = event.deltaMode === 1 ? event.deltaY * 32 : event.deltaY
       zoomBy(Math.exp(deltaY * ZOOM_SENSITIVITY))
     }
+
+    // While a planet world owns the screen, drop any stale input state so
+    // resuming never carries over held keys or half-finished gestures.
+    const unsubscribeWorld = subscribeWorld(() => {
+      releaseAllMovementKeys()
+      pointerTraces.current.clear()
+      pinchSpan.current = 0
+      rightButtonDragDistance.current = null
+      domElement.style.cursor = isInputLocked() ? '' : 'grab'
+    })
+
+    // The transition controller restores the exact camera state it finished
+    // with, so the free-flight camera continues seamlessly after returning.
+    const unsubscribeExternal = subscribeExternalCameraSync((position, quaternion) => {
+      desiredPosition.current.copy(position)
+      camera.position.copy(position)
+      restoreEuler.setFromQuaternion(quaternion, 'YXZ')
+      orientation.current.targetYaw = restoreEuler.y
+      orientation.current.targetPitch = restoreEuler.x
+      orientation.current.yaw = restoreEuler.y
+      orientation.current.pitch = restoreEuler.x
+      camera.rotation.set(restoreEuler.x, restoreEuler.y, 0)
+    })
 
     window.addEventListener('keydown', handleKeyDown)
     window.addEventListener('keyup', handleKeyUp)
@@ -214,12 +249,15 @@ function CameraControls() {
       domElement.removeEventListener('pointercancel', endPointer)
       domElement.removeEventListener('wheel', handleWheel)
       unsubscribeReset()
+      unsubscribeWorld()
+      unsubscribeExternal()
       domElement.style.cursor = ''
       domElement.style.touchAction = ''
     }
   }, [camera, gl])
 
   useFrame((_, delta) => {
+    if (isInputLocked()) return
     const orientationState = orientation.current
 
     const yaw = THREE.MathUtils.damp(orientationState.yaw, orientationState.targetYaw, ROTATION_DAMPING, delta)
@@ -260,25 +298,31 @@ function CameraControls() {
 }
 
 export function SolarSystem() {
+  // The scene stays mounted at all times — orbital state is a pure function
+  // of the shared clock, and keeping it mounted makes the return trip instant.
+  const { solarHidden } = useSyncExternalStore(subscribeWorld, getWorldSnapshot)
+
   return (
-    <Suspense fallback={null}>
-      <CameraControls />
-      <MilkyWay />
-      <Starfield />
-      <Sun />
-      <ZodiacalLight />
-      {PLANET_CONFIGS.map((config) => (
-        <Planet key={config.name} {...config} />
-      ))}
-      <Planet {...EARTH_CONFIG}>
-        <EarthMoon planetRadius={EARTH_CONFIG.radius} />
-      </Planet>
-      <Planet {...JUPITER_CONFIG}>
-        <GalileanMoons />
-      </Planet>
-      <Saturn />
-      <AsteroidBelt />
-      <KuiperBelt />
-    </Suspense>
+    <group visible={!solarHidden}>
+      <Suspense fallback={null}>
+        <CameraControls />
+        <MilkyWay />
+        <Starfield />
+        <Sun />
+        <ZodiacalLight />
+        {PLANET_CONFIGS.map((config) => (
+          <Planet key={config.name} {...config} />
+        ))}
+        <Planet {...EARTH_CONFIG}>
+          <EarthMoon planetRadius={EARTH_CONFIG.radius} />
+        </Planet>
+        <Planet {...JUPITER_CONFIG}>
+          <GalileanMoons />
+        </Planet>
+        <Saturn />
+        <AsteroidBelt />
+        <KuiperBelt />
+      </Suspense>
+    </group>
   )
 }

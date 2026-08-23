@@ -1,10 +1,11 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useSyncExternalStore } from 'react'
 import {
   pressMovementKey,
   releaseAllMovementKeys,
   releaseMovementKey,
 } from './movementInput'
 import { triggerReset } from './cameraReset'
+import { getWorldSnapshot, subscribeWorld } from '../planet-worlds/worldState'
 
 const DPAD_BUTTONS: Array<{ code: string; glyph: string; positionClass: string }> = [
   { code: 'KeyW', glyph: '▲', positionClass: 'vpad-up' },
@@ -59,6 +60,7 @@ function PadButton({
 }
 
 export function VirtualPad() {
+  const { worldId } = useSyncExternalStore(subscribeWorld, getWorldSnapshot)
   const [visible, setVisible] = useState(
     () =>
       typeof window !== 'undefined' &&
@@ -73,6 +75,9 @@ export function VirtualPad() {
       releaseAllMovementKeys()
     }
   }, [])
+
+  // The pad flies the solar-system camera; hide it inside planet worlds.
+  if (worldId) return null
 
   return (
     <>

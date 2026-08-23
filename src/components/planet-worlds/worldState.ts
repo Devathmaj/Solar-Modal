@@ -41,18 +41,24 @@ export function isInputLocked(): boolean {
   return snapshot.phase !== 'idle'
 }
 
-let enterRequest: BodyId | null = null
+let enterRequest: { id: BodyId; source: EnterSource } | null = null
 let exitRequest = false
 let pushedHistoryEntry = false
 
-export function requestEnter(worldId: BodyId) {
+export type EnterSource = 'click' | 'touch'
+
+/**
+ * @param source 'click' = deliberate selection (full cinematic approach);
+ *               'touch' = camera flew into the body (immediate envelopment).
+ */
+export function requestEnter(worldId: BodyId, source: EnterSource = 'click') {
   if (snapshot.phase !== 'idle') return
   if (!WORLDS[worldId]) return
-  enterRequest = worldId
+  enterRequest = { id: worldId, source }
   setSnapshot({ phase: 'entering', worldId })
 }
 
-export function consumeEnterRequest(): BodyId | null {
+export function consumeEnterRequest(): { id: BodyId; source: EnterSource } | null {
   const request = enterRequest
   enterRequest = null
   return request

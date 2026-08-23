@@ -56,6 +56,14 @@ export function bodyIdForPlanetName(name: string): BodyId | null {
   return PLANET_NAME_TO_BODY[name] ?? null
 }
 
+/**
+ * Collider registry ids used by the solar system ('sun', 'planet-Mercury',
+ * …) — shared by hover/proximity systems and the transition controller.
+ */
+export function colliderIdForBody(bodyId: BodyId | ''): string {
+  return bodyId === 'sun' ? 'sun' : `planet-${bodyId[0].toUpperCase()}${bodyId.slice(1)}`
+}
+
 export const WORLDS: Record<BodyId, WorldMeta> = {
   sun: {
     id: 'sun',

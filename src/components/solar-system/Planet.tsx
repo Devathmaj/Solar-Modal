@@ -7,6 +7,11 @@ import { registerCollider, syncColliderWithObject, unregisterCollider } from './
 import { bodyIdForPlanetName } from '../../config/planetWorlds'
 import { isInputLocked, requestEnter } from '../planet-worlds/worldState'
 import { isTap } from '../planet-worlds/pointerGuard'
+import {
+  hideHoverLabel,
+  moveHoverLabel,
+  showHoverLabel,
+} from '../planet-worlds/bodyHover'
 
 const SPHERE_SEGMENTS = 64
 const ORBIT_LINE_SEGMENTS = 256
@@ -110,6 +115,12 @@ export function Planet({
       <group ref={orbitRef}>
         <group ref={anchorRef} position={[orbitRadius, 0, 0]}>
           <group rotation={[0, 0, tiltAngle]}>
+            {/* Interior shell: if the camera ever ends up inside the sphere
+                it sees a dark wall instead of hollow backfaces */}
+            <mesh>
+              <sphereGeometry args={[radius * 0.96, 32, 24]} />
+              <meshBasicMaterial color="#06070b" side={THREE.BackSide} />
+            </mesh>
             <mesh
               ref={spinnerRef}
               onPointerOver={(event) => {
@@ -117,9 +128,15 @@ export function Planet({
                 if (!bodyId || isInputLocked()) return
                 setHighlight(true)
                 gl.domElement.style.cursor = 'pointer'
+                showHoverLabel(`Visit ${name}`, event.clientX, event.clientY)
+              }}
+              onPointerMove={(event) => {
+                if (!bodyId || isInputLocked()) return
+                moveHoverLabel(event.clientX, event.clientY)
               }}
               onPointerOut={() => {
                 setHighlight(false)
+                hideHoverLabel()
                 gl.domElement.style.cursor = ''
               }}
               onClick={(event) => {
@@ -127,8 +144,9 @@ export function Planet({
                 if (!bodyId || isInputLocked()) return
                 if (!isTap(event.nativeEvent.clientX, event.nativeEvent.clientY)) return
                 setHighlight(false)
+                hideHoverLabel()
                 gl.domElement.style.cursor = ''
-                requestEnter(bodyId)
+                requestEnter(bodyId, 'click')
               }}
             >
               <sphereGeometry args={[radius, SPHERE_SEGMENTS, SPHERE_SEGMENTS]} />

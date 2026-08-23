@@ -136,6 +136,25 @@ body,
   opacity: 0;
 }
 
+.body-hover-label {
+  position: fixed;
+  top: 0;
+  left: 0;
+  z-index: 25;
+  padding: 7px 13px;
+  border-radius: 10px;
+  background: rgba(18, 21, 28, 0.74);
+  color: #e6ecf7;
+  font-size: 12px;
+  letter-spacing: 0.08em;
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  backdrop-filter: blur(6px);
+  white-space: nowrap;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 120ms ease;
+}
+
 .world-hud {
   position: fixed;
   top: 16px;

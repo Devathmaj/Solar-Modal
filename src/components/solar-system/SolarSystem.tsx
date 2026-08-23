@@ -35,7 +35,12 @@ const INITIAL_ORIENTATION = (() => {
   )
   return { yaw: euler.y, pitch: euler.x }
 })()
-const MIN_CAMERA_RADIUS = 12
+/**
+ * Just under the Sun's touch-trigger range (6 × 1.12) so a dive at the Sun
+ * fires the transition before this clamp could stop the camera. Only the Sun
+ * lives near the origin — every other body orbits far outside this bubble.
+ */
+const MIN_CAMERA_RADIUS = 6.4
 const MAX_CAMERA_RADIUS = 300
 const PITCH_LIMIT = THREE.MathUtils.degToRad(85)
 const LOOK_SENSITIVITY = 0.0032

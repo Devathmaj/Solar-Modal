@@ -7,6 +7,11 @@ import { PLANET_TEXTURES } from './textures'
 import { registerCollider, unregisterCollider } from './colliders'
 import { isInputLocked, requestEnter } from '../planet-worlds/worldState'
 import { isTap } from '../planet-worlds/pointerGuard'
+import {
+  hideHoverLabel,
+  moveHoverLabel,
+  showHoverLabel,
+} from '../planet-worlds/bodyHover'
 
 const RADIUS = 6
 const SPHERE_SEGMENTS = 64
@@ -41,9 +46,15 @@ export function Sun() {
           if (isInputLocked()) return
           setHighlight(true)
           gl.domElement.style.cursor = 'pointer'
+          showHoverLabel('Visit Sun', event.clientX, event.clientY)
+        }}
+        onPointerMove={(event) => {
+          if (isInputLocked()) return
+          moveHoverLabel(event.clientX, event.clientY)
         }}
         onPointerOut={() => {
           setHighlight(false)
+          hideHoverLabel()
           gl.domElement.style.cursor = ''
         }}
         onClick={(event) => {
@@ -51,8 +62,9 @@ export function Sun() {
           if (isInputLocked()) return
           if (!isTap(event.nativeEvent.clientX, event.nativeEvent.clientY)) return
           setHighlight(false)
+          hideHoverLabel()
           gl.domElement.style.cursor = ''
-          requestEnter('sun')
+          requestEnter('sun', 'click')
         }}
       >
         <sphereGeometry args={[RADIUS, SPHERE_SEGMENTS, SPHERE_SEGMENTS]} />

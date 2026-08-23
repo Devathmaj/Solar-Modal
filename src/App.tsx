@@ -9,6 +9,8 @@ import { bootFromHash } from './components/planet-worlds/worldState'
 import { WorldTransition } from './components/planet-worlds/WorldTransition'
 import { PlanetWorldRouter } from './components/planet-worlds/PlanetWorldRouter'
 import { WorldHUD } from './components/planet-worlds/WorldHUD'
+import { BodyProximityTrigger } from './components/planet-worlds/BodyProximityTrigger'
+import { BodyHoverLabel } from './components/planet-worlds/BodyHoverLabel'
 
 export default function App() {
   useEffect(() => {
@@ -32,7 +34,11 @@ export default function App() {
         <SolarSystem />
         <PlanetWorldRouter />
         <WorldTransition />
+        <BodyProximityTrigger />
       </Canvas>
+
+      {/* Cursor-following "Visit <body>" pill */}
+      <BodyHoverLabel />
 
       {/* Atmosphere veil painted by the transition controller */}
       <div

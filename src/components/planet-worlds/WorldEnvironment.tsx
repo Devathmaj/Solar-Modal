@@ -274,6 +274,8 @@ interface ParticleFieldProps {
   spinSpeed?: number
   /** Vertical drift speed with wrap-around (rising plasma / settling dust). */
   riseSpeed?: number
+  /** Explicit transparent-pass order — guarantees stacking vs walls. */
+  renderOrder?: number
 }
 
 export function ParticleField({
@@ -285,6 +287,7 @@ export function ParticleField({
   spread = [50, 24, 50],
   spinSpeed = 0,
   riseSpeed = 0,
+  renderOrder = 16,
 }: ParticleFieldProps) {
   const glow = useMemo(() => createRadialGlowTexture(), [])
   useEffect(() => () => glow.dispose(), [glow])
@@ -325,7 +328,7 @@ export function ParticleField({
 
   return (
     <group ref={groupRef}>
-      <points geometry={geometry}>
+      <points geometry={geometry} renderOrder={renderOrder} frustumCulled={false}>
         <pointsMaterial
           map={glow}
           color={color}
@@ -400,7 +403,13 @@ export function CloudPuffs({
   return (
     <group ref={groupRef}>
       {puffs.map((puff, index) => (
-        <sprite key={index} position={puff.position} scale={[puff.scale, puff.scale * 0.55, 1]}>
+        <sprite
+          key={index}
+          position={puff.position}
+          scale={[puff.scale, puff.scale * 0.55, 1]}
+          renderOrder={15}
+          frustumCulled={false}
+        >
           <spriteMaterial
             map={glow}
             color={color}
@@ -793,7 +802,7 @@ function RealMapGasWalls({
 
   return (
     <>
-      <mesh>
+      <mesh renderOrder={10}>
         <cylinderGeometry args={[radius, radius, height, 64, 1, true]} />
         <meshStandardMaterial
           map={wallTexture ?? sourceMap}
@@ -809,7 +818,7 @@ function RealMapGasWalls({
         />
       </mesh>
       {detailOpacity > 0 && (
-        <mesh>
+        <mesh renderOrder={11}>
           {/* Slightly larger radius keeps the sheen strictly above the map */}
           <cylinderGeometry args={[radius + 0.75, radius + 0.75, height, 64, 1, true]} />
           <meshStandardMaterial
@@ -853,7 +862,7 @@ function ProceduralGasWalls({
   })
 
   return (
-    <mesh>
+    <mesh renderOrder={10}>
       <cylinderGeometry args={[radius, radius, height, 64, 1, true]} />
       <meshStandardMaterial
         map={texture}

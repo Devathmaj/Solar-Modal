@@ -36,24 +36,25 @@ export default function SunWorld() {
         enhance={{ saturation: 1.35, contrast: 1.22, brightness: 1.06, bandStrength: 0.45, grain: 0.45 }}
       />
 
-      {/* Rising plasma sparks */}
+      {/* Rising plasma sparks — solid normal-blended colours so they stay
+          visible against both bright and dark granulation */}
       <ParticleField
         count={750}
-        color="#ffd27a"
-        size={0.5}
-        opacity={0.6}
-        additive
+        color="#ffe9a8"
+        size={0.55}
+        opacity={0.85}
         spread={[80, 44, 80]}
         riseSpeed={3.2}
+        renderOrder={16}
       />
       <ParticleField
         count={300}
-        color="#fff1c0"
-        size={0.9}
-        opacity={0.32}
-        additive
+        color="#fff6d8"
+        size={0.95}
+        opacity={0.9}
         spread={[60, 36, 60]}
         riseSpeed={5}
+        renderOrder={17}
       />
 
       <CloudPuffs count={10} color="#ffbe62" radius={55} height={4} band={10} minScale={22} maxScale={48} opacity={0.14} speed={0.006} />

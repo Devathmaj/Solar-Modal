@@ -1,15 +1,24 @@
-import { CloudPuffs, DistantSunSprite, ParticleField, RockyGround, SkyDome } from './WorldEnvironment'
+import { CloudPuffs, DistantSunSprite, ParticleField, RockyGround, SkyDome, type SurfaceStyle } from './WorldEnvironment'
+
+const SURFACE: SurfaceStyle = {
+  palette: ['#5d7a4a', '#77935c', '#8a9a5e', '#a89a6a', '#5f7d68'],
+  blotches: 120,
+  speckles: 2200,
+  streaks: 24,
+}
+
+const BOULDERS = { count: 230, minScale: 0.05, maxScale: 0.3, color: '#8a8a76' }
 
 /**
  * Earth: the richest world — blue scattering overhead, drifting cumulus,
- * soft green-brown terrain below, clean sunlight. Home.
+ * rolling green terrain curving away below, clean sunlight. Home.
  */
 export default function EarthWorld() {
   return (
     <>
-      <ambientLight intensity={0.42} />
-      <directionalLight intensity={1.7} color="#fff6e6" position={[30, 34, -18]} />
-      <hemisphereLight args={['#9ecbff', '#6a8f5a', 0.75]} />
+      <ambientLight intensity={0.22} />
+      <directionalLight intensity={2.0} color="#fff6e6" position={[30, 34, -18]} />
+      <hemisphereLight args={['#9ecbff', '#6a8f5a', 0.6]} />
 
       <SkyDome top="#2e6fd0" mid="#7fb4ea" bottom="#d9ecfb" />
 
@@ -26,10 +35,14 @@ export default function EarthWorld() {
       <CloudPuffs count={9} color="#f2f6ff" radius={60} height={19} band={4} minScale={26} maxScale={50} opacity={0.13} speed={-0.005} />
 
       <RockyGround
-        texturePath="/assets/planets/earth/2k_earth_daymap.jpg"
-        displacement={0.7}
-        repeat={17}
-        color="#cfe0cc"
+        style={SURFACE}
+        repeat={46}
+        displacement={0.75}
+        curvatureRadius={1700}
+        tintA="#dcead2"
+        tintB="#71875e"
+        bumpScale={0.05}
+        boulders={BOULDERS}
       />
 
       {/* Faint near-ground sparkle: pollen / moisture in the air */}

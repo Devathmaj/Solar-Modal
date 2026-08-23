@@ -62,7 +62,7 @@ export const WORLDS: Record<BodyId, WorldMeta> = {
     title: 'SUN',
     section: 'Overview',
     fadeColor: '#ffbf6e',
-    fog: ['#ff8c30', 0.028],
+    fog: ['#e07820', 0.028],
     camera: {
       anchor: [0, 1.4, -5],
       distance: 8,
@@ -78,7 +78,7 @@ export const WORLDS: Record<BodyId, WorldMeta> = {
     title: 'MERCURY',
     section: 'Contact',
     fadeColor: '#b3aba1',
-    fog: ['#403b35', 0.007],
+    fog: ['#0d0c0b', 0.002],
     camera: {
       anchor: [0, 1.6, -6],
       distance: 8.5,
@@ -94,7 +94,7 @@ export const WORLDS: Record<BodyId, WorldMeta> = {
     title: 'VENUS',
     section: 'Testimonials',
     fadeColor: '#dba750',
-    fog: ['#c08a3e', 0.05],
+    fog: ['#cf9a48', 0.05],
     camera: {
       anchor: [0, 1.5, -5.5],
       distance: 7.5,
@@ -110,7 +110,7 @@ export const WORLDS: Record<BodyId, WorldMeta> = {
     title: 'EARTH',
     section: 'Projects',
     fadeColor: '#bdd8f4',
-    fog: ['#a8c8e8', 0.009],
+    fog: ['#b7d4ee', 0.009],
     camera: {
       anchor: [0, 1.7, -6],
       distance: 9,
@@ -126,7 +126,7 @@ export const WORLDS: Record<BodyId, WorldMeta> = {
     title: 'MARS',
     section: 'Experience',
     fadeColor: '#cb8c60',
-    fog: ['#a86a42', 0.02],
+    fog: ['#c98a5f', 0.02],
     camera: {
       anchor: [0, 1.5, -6],
       distance: 8.5,
@@ -142,7 +142,7 @@ export const WORLDS: Record<BodyId, WorldMeta> = {
     title: 'JUPITER',
     section: 'Skills',
     fadeColor: '#c69d6d',
-    fog: ['#7a4e28', 0.03],
+    fog: ['#7d5028', 0.03],
     camera: {
       anchor: [0, 1.6, -5],
       distance: 7,
@@ -158,7 +158,7 @@ export const WORLDS: Record<BodyId, WorldMeta> = {
     title: 'SATURN',
     section: 'Certifications',
     fadeColor: '#dbc497',
-    fog: ['#a8895c', 0.026],
+    fog: ['#a5824e', 0.026],
     camera: {
       anchor: [0, 1.5, -5],
       distance: 7,
@@ -174,7 +174,7 @@ export const WORLDS: Record<BodyId, WorldMeta> = {
     title: 'URANUS',
     section: 'Playground',
     fadeColor: '#a8dcdf',
-    fog: ['#6fa9ad', 0.03],
+    fog: ['#83c4c4', 0.03],
     camera: {
       anchor: [0, 1.4, -5],
       distance: 6.5,
@@ -190,7 +190,7 @@ export const WORLDS: Record<BodyId, WorldMeta> = {
     title: 'NEPTUNE',
     section: 'Writing',
     fadeColor: '#5484d4',
-    fog: ['#2f55a5', 0.032],
+    fog: ['#5682d6', 0.032],
     camera: {
       anchor: [0, 1.4, -5],
       distance: 6.5,

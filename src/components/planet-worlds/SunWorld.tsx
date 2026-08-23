@@ -1,17 +1,22 @@
 import { useEffect, useMemo, useRef } from 'react'
 import { useFrame } from '@react-three/fiber'
 import * as THREE from 'three'
-import { CloudPuffs, FlickerLight, ParticleField, SkyDome } from './WorldEnvironment'
+import { CloudPuffs, FlickerLight, GasSkyDome, ParticleField } from './WorldEnvironment'
 import { createBandTexture } from './worldAssets'
+
+// Full-surround photosphere ramp — zenith glare down to deep convection.
+const SKY_STOPS = ['#fff6d8', '#ffdf9a', '#ffae48', '#e87218', '#a83c08', '#5e1500']
+// Matches the world fog so the glowing deck dissolves into the glow.
+const HORIZON = '#e07820'
 
 /**
  * Entering the Sun is not stepping onto a floor — the camera hangs inside a
- * stylized photosphere: roiling plasma below, sparks rising all around, heavy
- * orange light. Clearly a visualization of the solar environment.
+ * stylized photosphere: a roiling granulation deck far below dissolving into
+ * the surrounding solar glow, sparks rising all around. No hard edges exist:
+ * the deck is fog-blended and the sky carries the same plasma palette.
  */
 export default function SunWorld() {
   const plasmaRef = useRef<THREE.Mesh>(null!)
-  const underPlasmaRef = useRef<THREE.Mesh>(null!)
 
   const plasmaTexture = useMemo(
     () =>
@@ -21,29 +26,12 @@ export default function SunWorld() {
       }),
     [],
   )
-  const underTexture = useMemo(
-    () =>
-      createBandTexture({
-        stops: ['#ffd27a', '#ff9426', '#d84f00'],
-        streaks: 60,
-      }),
-    [],
-  )
 
-  useEffect(
-    () => () => {
-      plasmaTexture.dispose()
-      underTexture.dispose()
-    },
-    [plasmaTexture, underTexture],
-  )
+  useEffect(() => () => plasmaTexture.dispose(), [plasmaTexture])
 
-  useFrame((state, delta) => {
+  useFrame((_, delta) => {
     plasmaTexture.offset.y += delta * 0.012
-    underTexture.offset.y -= delta * 0.007
     if (plasmaRef.current) plasmaRef.current.rotation.y += delta * 0.01
-    if (underPlasmaRef.current) underPlasmaRef.current.rotation.y -= delta * 0.006
-    void state
   })
 
   return (
@@ -51,16 +39,12 @@ export default function SunWorld() {
       <ambientLight intensity={1.15} color="#ffd9a0" />
       <pointLight intensity={180} decay={2} distance={260} color="#fff3c4" position={[0, 14, 0]} />
 
-      <SkyDome top="#fff3c4" mid="#ffb347" bottom="#7a1600" />
+      <GasSkyDome stops={SKY_STOPS} turb={0.16} drift={0.09} horizonColor={HORIZON} horizonSoftness={0.32} />
 
-      {/* Roiling photosphere far below */}
-      <mesh ref={plasmaRef} rotation={[-Math.PI / 2, 0, 0]} position={[0, -34, 0]}>
-        <planeGeometry args={[520, 520]} />
-        <meshBasicMaterial map={plasmaTexture} toneMapped={false} fog={false} />
-      </mesh>
-      <mesh ref={underPlasmaRef} rotation={[-Math.PI / 2, 0, 0]} position={[0, -44, 0]}>
-        <planeGeometry args={[520, 520]} />
-        <meshBasicMaterial map={underTexture} toneMapped={false} fog={false} />
+      {/* Roiling granulation deck — fog blends its edges into the glow */}
+      <mesh ref={plasmaRef} rotation={[-Math.PI / 2, 0, 0]} position={[0, -38, 0]}>
+        <planeGeometry args={[900, 900]} />
+        <meshBasicMaterial map={plasmaTexture} toneMapped={false} />
       </mesh>
 
       {/* Rising plasma sparks */}

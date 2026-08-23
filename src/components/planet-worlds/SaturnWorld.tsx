@@ -1,8 +1,14 @@
 import { useMemo } from 'react'
 import * as THREE from 'three'
-import { GasLayers, ParticleField, SkyDome, type GasLayerSpec } from './WorldEnvironment'
+import { CloudPuffs, GasLayers, GasSkyDome, ParticleField, type GasLayerSpec } from './WorldEnvironment'
+import { mirrorStops } from './worldAssets'
 
-const BAND_STOPS = ['#eeddb5', '#d9bc85', '#b8985e', '#8a6a3a', '#57401f']
+// Light→dark ramp for the full-surround gas sky…
+const SKY_STOPS = ['#eeddb5', '#d6b87f', '#b3925a', '#8a6939', '#5e4520', '#3f2d14']
+// …and its mirrored twin drives the seamless near-field cloud decks.
+const BAND_STOPS = mirrorStops(SKY_STOPS)
+// Must match the world fog so decks and sky meet with no seam.
+const HORIZON = '#a5824e'
 
 const LAYERS: GasLayerSpec[] = [
   { height: 13, opacity: 0.55, bands: 4, driftSpeed: 0.004 },
@@ -27,8 +33,9 @@ export default function SaturnWorld() {
     <>
       <ambientLight intensity={0.55} color="#eeddb5" />
       <hemisphereLight args={['#eed9ac', '#4a3418', 0.6]} />
+      <directionalLight intensity={1.0} color="#ffe8c0" position={[38, 66, -30]} />
 
-      <SkyDome top="#e5d0a2" mid="#c2a06a" bottom="#503618" />
+      <GasSkyDome stops={SKY_STOPS} turb={0.08} drift={0.035} horizonColor={HORIZON} horizonSoftness={0.22} />
 
       {/* Ring shadow hint — a subtle dark annulus high overhead */}
       <mesh geometry={ringShadow} position={[0, 46, 0]}>
@@ -36,6 +43,10 @@ export default function SaturnWorld() {
       </mesh>
 
       <GasLayers stops={BAND_STOPS} layers={LAYERS} />
+
+      {/* Soft mid-level decks for parallax */}
+      <CloudPuffs count={10} color="#eeddb5" radius={46} height={8} band={5} minScale={20} maxScale={42} opacity={0.13} speed={0.01} />
+      <CloudPuffs count={7} color="#96753f" radius={40} height={-6} band={4} minScale={24} maxScale={46} opacity={0.15} speed={-0.012} />
 
       {/* Calm golden haze */}
       <ParticleField

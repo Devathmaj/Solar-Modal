@@ -1,8 +1,14 @@
 import { useEffect, useMemo } from 'react'
 import * as THREE from 'three'
-import { FlickerLight, GasLayers, ParticleField, SkyDome, type GasLayerSpec } from './WorldEnvironment'
+import { CloudPuffs, FlickerLight, GasLayers, GasSkyDome, ParticleField, type GasLayerSpec } from './WorldEnvironment'
+import { mirrorStops } from './worldAssets'
 
-const BAND_STOPS = ['#e8cfa8', '#c89a62', '#a06a38', '#7a4820', '#4e2c12']
+// Light→dark ramp for the full-surround gas sky…
+const SKY_STOPS = ['#e2c493', '#bd9058', '#916031', '#66401d', '#402712', '#2c1a0c']
+// …and its mirrored twin drives the seamless near-field cloud decks.
+const BAND_STOPS = mirrorStops(SKY_STOPS)
+// Must match the world fog so decks and sky meet with no seam.
+const HORIZON = '#7d5028'
 
 const LAYERS: GasLayerSpec[] = [
   { height: 14, opacity: 0.85, bands: 5, driftSpeed: 0.006 },
@@ -42,10 +48,16 @@ export default function JupiterWorld() {
     <>
       <ambientLight intensity={0.5} color="#e8c090" />
       <hemisphereLight args={['#e8c090', '#4a2810', 0.65]} />
+      {/* Key light so the cloud decks shade with real relief */}
+      <directionalLight intensity={1.15} color="#ffd9a8" position={[42, 70, -34]} />
 
-      <SkyDome top="#caa06a" mid="#8a5a30" bottom="#38200f" />
+      <GasSkyDome stops={SKY_STOPS} turb={0.11} drift={0.05} horizonColor={HORIZON} horizonSoftness={0.24} />
 
       <GasLayers stops={BAND_STOPS} layers={LAYERS} />
+
+      {/* Mid-level cloud decks for parallax between the flat layers */}
+      <CloudPuffs count={11} color="#e8cfa8" radius={44} height={9} band={6} minScale={18} maxScale={40} opacity={0.15} speed={0.012} />
+      <CloudPuffs count={8} color="#7d4f27" radius={38} height={-7} band={5} minScale={22} maxScale={46} opacity={0.17} speed={-0.016} />
 
       {/* Great Red Spot — a storm bigger than Earth, far off */}
       <sprite position={[-95, -8, -150]} scale={[85, 52, 1]}>

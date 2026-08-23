@@ -1,4 +1,15 @@
-import { CloudPuffs, DistantSunSprite, ParticleField, RockyGround, SkyDome } from './WorldEnvironment'
+import { CloudPuffs, DistantSunSprite, ParticleField, RockyGround, SkyDome, type SurfaceStyle } from './WorldEnvironment'
+
+const SURFACE: SurfaceStyle = {
+  palette: ['#b06a43', '#8f4f30', '#c98a5c', '#7a3f26'],
+  craters: 110,
+  craterSize: [2, 9],
+  blotches: 90,
+  speckles: 2400,
+  streaks: 60,
+}
+
+const BOULDERS = { count: 420, minScale: 0.06, maxScale: 0.5, color: '#a35c33' }
 
 /**
  * Mars: a cold butterscotch sky, rust-coloured regolith, a noticeably small
@@ -7,9 +18,9 @@ import { CloudPuffs, DistantSunSprite, ParticleField, RockyGround, SkyDome } fro
 export default function MarsWorld() {
   return (
     <>
-      <ambientLight intensity={0.34} />
-      <directionalLight intensity={1.15} color="#ffd9b0" position={[26, 20, -22]} />
-      <hemisphereLight args={['#d99a66', '#7a3f22', 0.55]} />
+      <ambientLight intensity={0.18} />
+      <directionalLight intensity={1.45} color="#ffd9b0" position={[26, 20, -22]} />
+      <hemisphereLight args={['#d99a66', '#7a3f22', 0.4]} />
 
       <SkyDome top="#a05a35" mid="#cf8f5c" bottom="#eac094" />
 
@@ -23,10 +34,14 @@ export default function MarsWorld() {
       />
 
       <RockyGround
-        texturePath="/assets/planets/mars/2k_mars.jpg"
-        displacement={1.05}
-        repeat={24}
-        color="#dcab80"
+        style={SURFACE}
+        repeat={50}
+        displacement={1.0}
+        curvatureRadius={1350}
+        tintA="#e8c4a0"
+        tintB="#7d4526"
+        bumpScale={0.08}
+        boulders={BOULDERS}
       />
 
       {/* Settling dust — ever-present on Mars */}

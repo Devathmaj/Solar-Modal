@@ -1,4 +1,14 @@
-import { DistantSunSprite, RockyGround, SkyDome, StarPoints } from './WorldEnvironment'
+import { DistantSunSprite, RockyGround, SkyDome, StarPoints, type SurfaceStyle } from './WorldEnvironment'
+
+const SURFACE: SurfaceStyle = {
+  palette: ['#8f8880', '#7a736c', '#a39a90', '#6b645e'],
+  craters: 240,
+  craterSize: [2.5, 15],
+  blotches: 80,
+  speckles: 2600,
+}
+
+const BOULDERS = { count: 360, minScale: 0.06, maxScale: 0.42, color: '#8a827a' }
 
 /**
  * Mercury: airless, cratered, brutally lit. Black sky full of stars, one
@@ -7,8 +17,8 @@ import { DistantSunSprite, RockyGround, SkyDome, StarPoints } from './WorldEnvir
 export default function MercuryWorld() {
   return (
     <>
-      <ambientLight intensity={0.14} />
-      <directionalLight intensity={2.6} color="#fff8ec" position={[34, 22, -26]} />
+      <ambientLight intensity={0.06} />
+      <directionalLight intensity={3.2} color="#fff8ec" position={[34, 22, -26]} />
 
       {/* Near-black sky so the stars read as airless-space stars */}
       <SkyDome top="#010204" mid="#040404" bottom="#0a0908" />
@@ -23,10 +33,14 @@ export default function MercuryWorld() {
       />
 
       <RockyGround
-        texturePath="/assets/planets/mercury/2k_mercury.jpg"
-        displacement={0.55}
-        repeat={22}
-        color="#d6cec4"
+        style={SURFACE}
+        repeat={52}
+        displacement={0.85}
+        curvatureRadius={1050}
+        tintA="#ffffff"
+        tintB="#8d867e"
+        bumpScale={0.09}
+        boulders={BOULDERS}
       />
     </>
   )

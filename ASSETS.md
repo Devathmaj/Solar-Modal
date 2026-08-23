@@ -88,12 +88,20 @@ either fully procedural in code or reuses the §1 texture set already present
 under `public/assets/planets/`:
 
 - **Sky domes** — custom gradient shader (`WorldEnvironment.tsx`, `SkyDome`)
-- **Gas-giant atmospheres** (Jupiter/Saturn/Uranus/Neptune) — canvas-generated
-  cloud-band textures + stacked drifting translucent planes (`worldAssets.ts`,
-  `GasLayers`); Great Red Spot / Dark Spot are canvas radial gradients
-- **Rocky terrain** (Mercury/Mars/Earth) — noise-displaced ground planes that
-  tile the existing `2k_mercury.jpg` / `2k_mars.jpg` / `2k_earth_daymap.jpg`
-  maps (`RockyGround`)
+- **Gas-giant atmospheres** (Jupiter/Saturn/Uranus/Neptune) — a full-surround
+  banded gas sky shader (`GasSkyDome`: palette ramp zenith→nadir perturbed by
+  multi-frequency turbulence) so the far field is gas itself with no horizon
+  seam, plus seamless canvas cloud-band decks (mirrored palettes, elongated
+  masses, multi-frequency streaks, fine grain) used as colour *and* bump maps
+  on lit drifting planes (`worldAssets.ts`, `GasLayers`); Great Red Spot /
+  Dark Spot are canvas radial gradients
+- **Rocky terrain** (Mercury/Mars/Earth) — curved planetary caps (geometry
+  bent over a sphere so horizons fall away) with seamless procedurally painted
+  surface canvases — layered tonal patches, impact craters, wind streaks and
+  speckle grain — used as both colour and bump maps, plus per-vertex macro
+  tinting and instanced boulders that share a neutral rock texture with
+  per-instance colour variation (`RockyGround`, `Boulders`, `worldAssets.ts`).
+  No photo texture is tiled across terrain.
 - **Cloud decks & haze** — billboarded sprites using the existing procedural
   glow texture (`CloudPuffs`, `ParticleField`)
 - **Stars in world skies** — random point shells (`StarPoints`); distant Sun

@@ -18,9 +18,11 @@ const BOULDERS = { count: 420, minScale: 0.06, maxScale: 0.5, color: '#a35c33' }
 export default function MarsWorld() {
   return (
     <>
-      <ambientLight intensity={0.18} />
+      <ambientLight intensity={0.26} />
       <directionalLight intensity={1.45} color="#ffd9b0" position={[26, 20, -22]} />
-      <hemisphereLight args={['#d99a66', '#7a3f22', 0.4]} />
+      {/* Dust-scattered fill: softens the terminator without flattening */}
+      <directionalLight intensity={0.32} color="#a8bcdc" position={[-30, -8, 26]} />
+      <hemisphereLight args={['#d99a66', '#7a3f22', 0.5]} />
 
       <SkyDome top="#a05a35" mid="#cf8f5c" bottom="#eac094" />
 

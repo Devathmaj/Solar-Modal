@@ -15,19 +15,52 @@ import {
 
 const SPHERE_SEGMENTS = 64
 const ORBIT_LINE_SEGMENTS = 256
-const ORBIT_LINE_COLOR = '#7d8fa8'
-const ORBIT_LINE_OPACITY = 0.22
 
 interface PlanetProps extends PlanetConfig {
   children?: ReactNode
 }
 
-function OrbitPath({ radius }: { radius: number }) {
+const ORBIT_VERTEX = /* glsl */ `
+  varying float vAngle;
+  void main() {
+    vAngle = atan(position.z, position.x);
+    gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+  }
+`
+
+/**
+ * Orbit line that opens a gap around the planet's live angular position —
+ * the ring pierces the body's centre, and without the gap its near arc
+ * slashes across the planet disc from every viewing angle.
+ */
+const ORBIT_FRAGMENT = /* glsl */ `
+  uniform vec3 uColor;
+  uniform float uOpacity;
+  uniform float uPlanetAngle;
+  uniform float uGap;
+  varying float vAngle;
+  void main() {
+    float d = abs(mod(vAngle - uPlanetAngle + 3.14159265, 6.28318530) - 3.14159265);
+    if (d < uGap) discard;
+    gl_FragColor = vec4(uColor, uOpacity);
+  }
+`
+
+function OrbitPath({
+  radius,
+  bodyRadius,
+  getAngle,
+}: {
+  radius: number
+  bodyRadius: number
+  getAngle: () => number
+}) {
   const geometry = useMemo(() => {
     const positions = new Float32Array(ORBIT_LINE_SEGMENTS * 3)
     for (let i = 0; i < ORBIT_LINE_SEGMENTS; i++) {
       const angle = (i / ORBIT_LINE_SEGMENTS) * Math.PI * 2
       positions[i * 3] = Math.cos(angle) * radius
+      positions[i * 3 + 1] = 0
       positions[i * 3 + 2] = Math.sin(angle) * radius
     }
     const bufferGeometry = new THREE.BufferGeometry()
@@ -35,14 +68,30 @@ function OrbitPath({ radius }: { radius: number }) {
     return bufferGeometry
   }, [radius])
 
+  const uniforms = useMemo(
+    () => ({
+      uColor: { value: new THREE.Color('#7d8fa8') },
+      uOpacity: { value: 0.22 },
+      uPlanetAngle: { value: 0 },
+      // Angular half-width of the gap, sized from the body's own radius.
+      uGap: { value: Math.asin(Math.min(0.95, (bodyRadius * 1.7) / radius)) + 0.02 },
+    }),
+    [bodyRadius, radius],
+  )
+
   useEffect(() => () => geometry.dispose(), [geometry])
+
+  useFrame(() => {
+    uniforms.uPlanetAngle.value = getAngle()
+  })
 
   return (
     <lineLoop geometry={geometry}>
-      <lineBasicMaterial
-        color={ORBIT_LINE_COLOR}
+      <shaderMaterial
+        vertexShader={ORBIT_VERTEX}
+        fragmentShader={ORBIT_FRAGMENT}
+        uniforms={uniforms}
         transparent
-        opacity={ORBIT_LINE_OPACITY}
         depthWrite={false}
       />
     </lineLoop>
@@ -111,7 +160,11 @@ export function Planet({
 
   return (
     <>
-      <OrbitPath radius={orbitRadius} />
+      <OrbitPath
+        radius={orbitRadius}
+        bodyRadius={radius}
+        getAngle={() => orbitRef.current?.rotation.y ?? 0}
+      />
       <group ref={orbitRef}>
         <group ref={anchorRef} position={[orbitRadius, 0, 0]}>
           <group rotation={[0, 0, tiltAngle]}>

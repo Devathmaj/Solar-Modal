@@ -16,8 +16,10 @@ const BOULDERS = { count: 230, minScale: 0.05, maxScale: 0.3, color: '#8a8a76' }
 export default function EarthWorld() {
   return (
     <>
-      <ambientLight intensity={0.22} />
+      <ambientLight intensity={0.3} />
       <directionalLight intensity={2.0} color="#fff6e6" position={[30, 34, -18]} />
+      {/* Atmospheric scattering fill: lifts the night side like twilight */}
+      <directionalLight intensity={0.4} color="#9ecbff" position={[-32, -10, 24]} />
       <hemisphereLight args={['#9ecbff', '#6a8f5a', 0.6]} />
 
       <SkyDome top="#2e6fd0" mid="#7fb4ea" bottom="#d9ecfb" />

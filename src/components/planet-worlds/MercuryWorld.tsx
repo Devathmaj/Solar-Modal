@@ -17,8 +17,12 @@ const BOULDERS = { count: 360, minScale: 0.06, maxScale: 0.42, color: '#8a827a' 
 export default function MercuryWorld() {
   return (
     <>
-      <ambientLight intensity={0.06} />
-      <directionalLight intensity={3.2} color="#fff8ec" position={[34, 22, -26]} />
+      {/* Harsh key light, but with a faint spaceglow fill so the night side
+          reads as dim rather than a razor-cut black half */}
+      <ambientLight intensity={0.15} />
+      <directionalLight intensity={2.9} color="#fff8ec" position={[34, 22, -26]} />
+      <directionalLight intensity={0.32} color="#8fa3c8" position={[-40, -10, 30]} />
+      <hemisphereLight args={['#3d465c', '#16130f', 0.4]} />
 
       {/* Near-black sky so the stars read as airless-space stars */}
       <SkyDome top="#010204" mid="#040404" bottom="#0a0908" />

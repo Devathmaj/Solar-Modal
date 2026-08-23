@@ -1,22 +1,14 @@
 import { useEffect, useMemo } from 'react'
 import * as THREE from 'three'
-import { CloudPuffs, FlickerLight, GasLayers, GasSkyDome, ParticleField, type GasLayerSpec } from './WorldEnvironment'
+import { CloudPuffs, FlickerLight, GasSkyDome, GasWalls, ParticleField } from './WorldEnvironment'
 import { mirrorStops } from './worldAssets'
 
 // Light→dark ramp for the full-surround gas sky…
 const SKY_STOPS = ['#e2c493', '#bd9058', '#916031', '#66401d', '#402712', '#2c1a0c']
-// …and its mirrored twin drives the seamless near-field cloud decks.
+// …and its mirrored twin drives the seamless near-field gas wall.
 const BAND_STOPS = mirrorStops(SKY_STOPS)
-// Must match the world fog so decks and sky meet with no seam.
+// Must match the world fog so wall and sky meet with no seam.
 const HORIZON = '#7d5028'
-
-const LAYERS: GasLayerSpec[] = [
-  { height: 14, opacity: 0.85, bands: 5, driftSpeed: 0.006 },
-  { height: 6, opacity: 0.8, bands: 6, driftSpeed: 0.009 },
-  { height: -2, opacity: 0.75, bands: 7, driftSpeed: 0.013 },
-  { height: -10, opacity: 0.7, bands: 8, driftSpeed: 0.02 },
-  { height: -20, opacity: 0.62, bands: 9, driftSpeed: 0.031 },
-]
 
 /**
  * Jupiter: there is no "inside" — only ever-deeper atmosphere. The camera
@@ -53,9 +45,15 @@ export default function JupiterWorld() {
 
       <GasSkyDome stops={SKY_STOPS} turb={0.11} drift={0.05} horizonColor={HORIZON} horizonSoftness={0.24} />
 
-      <GasLayers stops={BAND_STOPS} layers={LAYERS} />
+      {/* Continuous banded gas wall clad in Cassini's real Jupiter map */}
+      <GasWalls
+        stops={BAND_STOPS}
+        texturePath="/assets/planets/real-maps/jupiter_voyager2_cylindrical.jpg"
+        opacity={0.96}
+        driftSpeed={0.006}
+      />
 
-      {/* Mid-level cloud decks for parallax between the flat layers */}
+      {/* Mid-level cloud decks for parallax inside the wall */}
       <CloudPuffs count={11} color="#e8cfa8" radius={44} height={9} band={6} minScale={18} maxScale={40} opacity={0.15} speed={0.012} />
       <CloudPuffs count={8} color="#7d4f27" radius={38} height={-7} band={5} minScale={22} maxScale={46} opacity={0.17} speed={-0.016} />
 

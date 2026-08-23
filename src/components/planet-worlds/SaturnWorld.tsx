@@ -1,21 +1,14 @@
 import { useMemo } from 'react'
 import * as THREE from 'three'
-import { CloudPuffs, GasLayers, GasSkyDome, ParticleField, type GasLayerSpec } from './WorldEnvironment'
+import { CloudPuffs, GasSkyDome, GasWalls, ParticleField } from './WorldEnvironment'
 import { mirrorStops } from './worldAssets'
 
 // Light→dark ramp for the full-surround gas sky…
 const SKY_STOPS = ['#eeddb5', '#d6b87f', '#b3925a', '#8a6939', '#5e4520', '#3f2d14']
-// …and its mirrored twin drives the seamless near-field cloud decks.
+// …and its mirrored twin drives the seamless near-field gas wall.
 const BAND_STOPS = mirrorStops(SKY_STOPS)
-// Must match the world fog so decks and sky meet with no seam.
+// Must match the world fog so wall and sky meet with no seam.
 const HORIZON = '#a5824e'
-
-const LAYERS: GasLayerSpec[] = [
-  { height: 13, opacity: 0.55, bands: 4, driftSpeed: 0.004 },
-  { height: 5, opacity: 0.52, bands: 5, driftSpeed: 0.007 },
-  { height: -3, opacity: 0.48, bands: 6, driftSpeed: 0.011 },
-  { height: -13, opacity: 0.42, bands: 7, driftSpeed: 0.017 },
-]
 
 /**
  * Saturn: like Jupiter but gentler — muted pale-gold bands, calmer shear,
@@ -42,9 +35,24 @@ export default function SaturnWorld() {
         <meshBasicMaterial color="#1c130a" transparent opacity={0.16} depthWrite={false} side={THREE.DoubleSide} />
       </mesh>
 
-      <GasLayers stops={BAND_STOPS} layers={LAYERS} />
+      {/* Continuous gas wall clad in the real Cassini Saturn map, enhanced
+          for readability: saturated gold bands + shearing detail sheen */}
+      <GasWalls
+        stops={BAND_STOPS}
+        texturePath="/assets/planets/real-maps/saturn_cassini_cylindrical.jpg"
+        opacity={0.97}
+        detailOpacity={0.22}
+        tint="#fff3d9"
+        hRepeat={2}
+        driftSpeed={0.004}
+        bumpScale={0.42}
+        enhance={{ saturation: 1.55, contrast: 1.45, brightness: 1.05, bandStrength: 1.05, grain: 0.6 }}
+      />
 
-      {/* Soft mid-level decks for parallax */}
+      {/* Great White Spot — Saturn's periodic planet-circling storm outbreak */}
+      <CloudPuffs count={4} color="#ffffff" radius={30} height={13} band={5} minScale={26} maxScale={44} opacity={0.32} speed={0.02} />
+
+      {/* Soft mid-level decks for parallax inside the wall */}
       <CloudPuffs count={10} color="#eeddb5" radius={46} height={8} band={5} minScale={20} maxScale={42} opacity={0.13} speed={0.01} />
       <CloudPuffs count={7} color="#96753f" radius={40} height={-6} band={4} minScale={24} maxScale={46} opacity={0.15} speed={-0.012} />
 

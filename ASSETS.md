@@ -90,11 +90,10 @@ under `public/assets/planets/`:
 - **Sky domes** — custom gradient shader (`WorldEnvironment.tsx`, `SkyDome`)
 - **Gas-giant atmospheres** (Jupiter/Saturn/Uranus/Neptune) — a full-surround
   banded gas sky shader (`GasSkyDome`: palette ramp zenith→nadir perturbed by
-  multi-frequency turbulence) so the far field is gas itself with no horizon
-  seam, plus seamless canvas cloud-band decks (mirrored palettes, elongated
-  masses, multi-frequency streaks, fine grain) used as colour *and* bump maps
-  on lit drifting planes (`worldAssets.ts`, `GasLayers`); Great Red Spot /
-  Dark Spot are canvas radial gradients
+  multi-frequency turbulence, converging to the fog colour in a gaussian
+  horizon band) plus one continuous open **cylindrical gas wall** viewed from
+  inside (`GasWalls`) — a single unbroken banded surface, so no layer edges or
+  horizon gaps can exist; Great Red Spot / Dark Spot are canvas radial gradients
 - **Rocky terrain** (Mercury/Mars/Earth) — curved planetary caps (geometry
   bent over a sphere so horizons fall away) with seamless procedurally painted
   surface canvases — layered tonal patches, impact craters, wind streaks and
@@ -109,6 +108,34 @@ under `public/assets/planets/`:
 
 Files: `src/components/planet-worlds/*`, `src/config/planetWorlds.ts`.
 
+## 7. Real atmospheric maps inside the gas-giant worlds
+
+The interiors of Jupiter, Saturn, Uranus and Neptune are clad in **real
+spacecraft-derived equirectangular (cylindrical) cloud maps**, applied to the
+continuous gas wall (`GasWalls`) so the visitor is surrounded by that planet's
+actual cloud structure. Base imagery is NASA public domain; map projections
+were processed by Björn Jónsson ([bjj.mmedia.is](https://bjj.mmedia.is)),
+whose planetary maps are published for public use with attribution.
+
+| | |
+|---|---|
+| **Jupiter** | `public/assets/planets/real-maps/jupiter_voyager2_cylindrical.jpg` (~2.7 MB) — global cloud map built from NASA/JPL Voyager 2 imagery, processing B. Jónsson |
+| **Saturn** | `public/assets/planets/real-maps/saturn_cassini_cylindrical.jpg` (~1.0 MB) — global map from NASA/JPL/SSI Cassini imagery, processing B. Jónsson |
+| **Uranus** | `public/assets/planets/real-maps/uranus_voyager2_cylindrical.png` (~250 KB) — cylindrical map from NASA/JPL-Caltech Voyager 2 data, processing B. Jónsson (hosted by The Planetary Society) |
+| **Neptune** | `public/assets/planets/real-maps/neptune_voyager2_cylindrical.jpg` (~310 KB) — simple-cylindrical map assembled from 27 orange/green/blue Voyager 2 frames (1989), processing B. Jónsson |
+| **License** | NASA imagery: public domain (NASA Media Usage Guidelines). Derived map processing © Björn Jónsson — used with attribution, non-commercial portfolio context |
+| **Processing** | Loaded maps receive an in-engine **visual-enhancement pass** (`enhanceAtmosphereImage`): saturation/contrast boost plus composited soft-light banding, overlay cloud masses, turbulence streaks and fine grain painted into the map pixels. This deliberately sacrifices strict colour accuracy for readability — the true-colour versions of Saturn/Uranus/Neptune are nearly featureless. Maps wrap horizontally by construction, closing the gas wall seamlessly. A counter-scrolling **procedural detail sheen** (canvas-generated, per §6 technique) is layered on top for wind-shear motion — no additional downloaded assets |
+| **Used by** | `JupiterWorld.tsx`, `SaturnWorld.tsx`, `UranusWorld.tsx`, `NeptuneWorld.tsx` via `GasWalls` |
+
+Design notes grounded in mission science: Jupiter's interior look follows its
+three known cloud decks — high white ammonia cirrus, reddish-brown
+ammonium-hydrosulfide, and deep white water thunderclouds with lightning
+(Cassini methane-band studies; Galileo probe; Juno "shallow lightning" &
+mushballs results). Saturn appears hazier and lower-contrast than Jupiter due
+to its photochemical haze; Uranus is a near-featureless pale cyan methane
+haze (Voyager 2 saw almost no discrete clouds); Neptune shows vivid azure
+with bright methane cirrus and dark storm ovals.
+
 ---
 
 ## Attribution quick-reference
@@ -117,4 +144,5 @@ Files: `src/components/planet-worlds/*`, `src/config/planetWorlds.ts`.
 Planet textures:      Solar System Scope            CC BY 4.0
 Star catalog:         HYG v3.8 / astronexus         CC BY-SA 2.5
 Milky Way background: ESA/Gaia/DPAC (A. Moitinho)   CC BY-SA 3.0 IGO
+Gas-giant interior maps: NASA (PD) / Björn Jónsson  public domain + attribution
 ```

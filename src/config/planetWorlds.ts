@@ -142,7 +142,7 @@ export const WORLDS: Record<BodyId, WorldMeta> = {
     title: 'JUPITER',
     section: 'Skills',
     fadeColor: '#c69d6d',
-    fog: ['#7d5028', 0.03],
+    fog: ['#7d5028', 0.008],
     camera: {
       anchor: [0, 1.6, -5],
       distance: 7,
@@ -158,7 +158,7 @@ export const WORLDS: Record<BodyId, WorldMeta> = {
     title: 'SATURN',
     section: 'Certifications',
     fadeColor: '#dbc497',
-    fog: ['#a5824e', 0.026],
+    fog: ['#a5824e', 0.007],
     camera: {
       anchor: [0, 1.5, -5],
       distance: 7,
@@ -174,7 +174,7 @@ export const WORLDS: Record<BodyId, WorldMeta> = {
     title: 'URANUS',
     section: 'Playground',
     fadeColor: '#a8dcdf',
-    fog: ['#83c4c4', 0.03],
+    fog: ['#83c4c4', 0.007],
     camera: {
       anchor: [0, 1.4, -5],
       distance: 6.5,
@@ -190,7 +190,7 @@ export const WORLDS: Record<BodyId, WorldMeta> = {
     title: 'NEPTUNE',
     section: 'Writing',
     fadeColor: '#5484d4',
-    fog: ['#5682d6', 0.032],
+    fog: ['#5682d6', 0.008],
     camera: {
       anchor: [0, 1.4, -5],
       distance: 6.5,

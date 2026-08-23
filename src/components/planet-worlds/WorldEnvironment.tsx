@@ -1,13 +1,16 @@
 import { useEffect, useMemo, useRef } from 'react'
 import { useFrame, useThree } from '@react-three/fiber'
+import { useTexture } from '@react-three/drei'
 import * as THREE from 'three'
 import { createRadialGlowTexture } from '../solar-system/glowTexture'
 import {
   createBandTexture,
   createRockSurfaceTexture,
   createSurfaceTexture,
+  enhanceAtmosphereImage,
   rockySurfaceHeight,
   terrainNoise,
+  type AtmosphereEnhanceOptions,
   type SurfaceStyle,
 } from './worldAssets'
 
@@ -640,74 +643,208 @@ function Boulders({
 }
 
 /* ------------------------------------------------------------------ */
-/* Gas layers (Jupiter / Saturn / ice-giant atmospheres)               */
+/* Gas walls (Jupiter / Saturn / ice-giant atmospheres)                */
 /* ------------------------------------------------------------------ */
 
-export interface GasLayerSpec {
-  height: number
-  opacity: number
-  /**
-   * Vertical texture cycles baked per tile (use `mirrorStops` palettes so
-   * tiles are seamless). More cycles = denser banding.
-   */
-  bands: number
-  driftSpeed: number
-  /** Horizontal texture repeats — breaks up along-band uniformity. */
-  hRepeat?: number
-}
-
-interface GasLayersProps {
+export interface GasWallsProps {
+  /** Mirrored (seamless) palette — see mirrorStops. */
   stops: string[]
-  layers: GasLayerSpec[]
-  planeSize?: number
+  /**
+   * Real atmospheric map (NASA-derived equirectangular cylindrical projection).
+   * When provided it replaces the procedural band texture on the wall.
+   */
+  texturePath?: string
+  opacity?: number
+  /**
+   * Strength of the counter-scrolling detail sheen over real maps — the
+   * immersion layer for low-contrast atmospheres (0 disables it).
+   */
+  detailOpacity?: number
+  /** Subtle multiply tint giving each wall its own colour character. */
+  tint?: string
+  /**
+   * Visual-enhancement pass for real maps (saturation/contrast plus painted
+   * banding, streaks and grain). Accuracy sacrificed for readability.
+   */
+  enhance?: AtmosphereEnhanceOptions
+  bumpScale?: number
+  /** Vertical band cycles around the wall (procedural mode). */
+  bands?: number
+  /** Horizontal texture repeats around the circumference (procedural mode). */
+  hRepeat?: number
+  driftSpeed?: number
+  radius?: number
+  height?: number
   streaks?: number
 }
 
 /**
- * Stacked translucent cloud decks with turbulent banded textures. The decks
- * are lit (standard material + bump relief) so the directional light models
- * real depth into the texture instead of a flat painted wash. Nothing solid
- * exists below — just progressively deeper, darker gas.
+ * A single continuous open cylinder of banded gas surrounding the camera,
+ * viewed from inside. Because it is one unbroken surface there are no layer
+ * edges to peek between — the old stacked-plane "slits" are impossible by
+ * construction. Its far side fogs out and meets the horizon-converged gas
+ * sky exactly.
+ *
+ * With `texturePath` the wall is clad in a real spacecraft-derived
+ * atmospheric map (Cassini/Voyager equirectangular projections — their left
+ * and right edges match by construction, so the cylinder closes seamlessly).
  */
-export function GasLayers({ stops, layers, planeSize = 340, streaks = 80 }: GasLayersProps) {
-  const textures = useMemo(
-    () =>
-      layers.map((layer, index) => {
-        const texture = createBandTexture({ stops, streaks })
-        texture.repeat.set(layer.hRepeat ?? 3, layer.bands + index * 0.35)
-        return texture
-      }),
-    [stops, layers, streaks],
+export function GasWalls(props: GasWallsProps) {
+  return props.texturePath ? (
+    <RealMapGasWalls {...props} />
+  ) : (
+    <ProceduralGasWalls {...props} />
   )
+}
 
-  useEffect(() => () => textures.forEach((texture) => texture.dispose()), [textures])
+function RealMapGasWalls({
+  stops,
+  texturePath,
+  opacity = 0.95,
+  detailOpacity = 0.16,
+  tint,
+  enhance,
+  bumpScale = 0.24,
+  hRepeat = 1,
+  driftSpeed = 0.01,
+  radius = 150,
+  height = 420,
+}: GasWallsProps) {
+  const gl = useThree((state) => state.gl)
+  const sourceMap = useTexture(texturePath!)
+
+  // Enhanced variant of the real map: colour punch plus painted banding,
+  // cloud masses, streaks and grain — for low-contrast atmospheres.
+  const wallTexture = useMemo(() => {
+    if (!enhance) return null
+    const image = sourceMap.image as HTMLImageElement | undefined
+    if (!image || !image.width) return null
+    const canvas = enhanceAtmosphereImage(image, enhance)
+    const texture = new THREE.CanvasTexture(canvas)
+    texture.colorSpace = THREE.SRGBColorSpace
+    texture.wrapS = THREE.RepeatWrapping
+    texture.wrapT = THREE.RepeatWrapping
+    texture.anisotropy = gl.capabilities.getMaxAnisotropy()
+    return texture
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [sourceMap, gl])
+
+  useEffect(() => () => {
+    wallTexture?.dispose()
+  }, [wallTexture])
+
+  // Counter-scrolling procedural sheen: adds visible wind shear and fine
+  // structure over low-contrast real atmospheres (Saturn/Uranus/Neptune).
+  const detailTexture = useMemo(() => {
+    const detail = createBandTexture({ stops, streaks: 90 })
+    detail.repeat.set(hRepeat * 5, 2)
+    detail.anisotropy = gl.capabilities.getMaxAnisotropy()
+    return detail
+  }, [stops, hRepeat, gl])
+
+  useEffect(() => {
+    sourceMap.colorSpace = THREE.SRGBColorSpace
+    sourceMap.wrapS = THREE.RepeatWrapping
+    sourceMap.wrapT = THREE.RepeatWrapping
+    sourceMap.anisotropy = gl.capabilities.getMaxAnisotropy()
+    sourceMap.needsUpdate = true
+  }, [sourceMap, gl])
+
+  useEffect(() => {
+    const active = wallTexture ?? sourceMap
+    // Real maps already wrap horizontally; tiling them 2× around brings
+    // recurring features into view on low-contrast planets.
+    active.repeat.set(hRepeat, 1)
+    active.needsUpdate = true
+  }, [sourceMap, wallTexture, hRepeat])
+
+  useEffect(() => () => detailTexture.dispose(), [detailTexture])
 
   useFrame((_, delta) => {
-    layers.forEach((layer, index) => {
-      const texture = textures[index]
-      texture.offset.y -= layer.driftSpeed * delta
-    })
+    const active = wallTexture ?? sourceMap
+    // Base sinks slowly (descent); detail shears upward and sideways —
+    // relative motion between layers sells the immersion.
+    active.offset.y -= driftSpeed * delta
+    detailTexture.offset.y += driftSpeed * 2.1 * delta
+    detailTexture.offset.x += driftSpeed * 2.8 * delta
   })
 
   return (
     <>
-      {layers.map((layer, index) => (
-        <mesh key={index} rotation={[-Math.PI / 2, 0, 0]} position={[0, layer.height, 0]}>
-          <planeGeometry args={[planeSize, planeSize]} />
+      <mesh>
+        <cylinderGeometry args={[radius, radius, height, 64, 1, true]} />
+        <meshStandardMaterial
+          map={wallTexture ?? sourceMap}
+          bumpMap={wallTexture ?? sourceMap}
+          bumpScale={bumpScale}
+          color={tint ?? '#ffffff'}
+          roughness={1}
+          metalness={0}
+          transparent
+          opacity={opacity}
+          side={THREE.BackSide}
+          depthWrite={false}
+        />
+      </mesh>
+      {detailOpacity > 0 && (
+        <mesh>
+          {/* Slightly larger radius keeps the sheen strictly above the map */}
+          <cylinderGeometry args={[radius + 0.75, radius + 0.75, height, 64, 1, true]} />
           <meshStandardMaterial
-            map={textures[index]}
-            bumpMap={textures[index]}
-            bumpScale={0.35}
+            map={detailTexture}
+            transparent
+            opacity={detailOpacity}
             roughness={1}
             metalness={0}
-            transparent
-            opacity={layer.opacity}
+            side={THREE.BackSide}
             depthWrite={false}
-            side={THREE.DoubleSide}
           />
         </mesh>
-      ))}
+      )}
     </>
+  )
+}
+
+function ProceduralGasWalls({
+  stops,
+  opacity = 0.9,
+  bands = 2,
+  hRepeat = 10,
+  driftSpeed = 0.01,
+  radius = 150,
+  height = 420,
+  streaks = 90,
+}: GasWallsProps) {
+  const gl = useThree((state) => state.gl)
+
+  const texture = useMemo(() => {
+    const bandTexture = createBandTexture({ stops, streaks })
+    bandTexture.repeat.set(hRepeat, bands)
+    bandTexture.anisotropy = gl.capabilities.getMaxAnisotropy()
+    return bandTexture
+  }, [stops, bands, hRepeat, streaks, gl])
+
+  useEffect(() => () => texture.dispose(), [texture])
+
+  useFrame((_, delta) => {
+    texture.offset.y -= driftSpeed * delta
+  })
+
+  return (
+    <mesh>
+      <cylinderGeometry args={[radius, radius, height, 64, 1, true]} />
+      <meshStandardMaterial
+        map={texture}
+        bumpMap={texture}
+        bumpScale={0.5}
+        roughness={1}
+        metalness={0}
+        transparent
+        opacity={opacity}
+        side={THREE.BackSide}
+        depthWrite={false}
+      />
+    </mesh>
   )
 }
 

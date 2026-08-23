@@ -72,7 +72,8 @@ export function createBandTexture(options: BandTextureOptions) {
     }
   }
 
-  // Turbulence streaks with two sine frequencies per streak.
+  // Turbulence streaks with two sine frequencies per streak, drawn with
+  // horizontal wrap-around so cylindrical projections never show a seam.
   const streaks = options.streaks ?? 72
   for (let i = 0; i < streaks; i++) {
     const y = Math.random() * height
@@ -90,12 +91,14 @@ export function createBandTexture(options: BandTextureOptions) {
     context.fillStyle = light
       ? `rgba(255,255,255,${alpha})`
       : `rgba(20,10,5,${alpha * 0.9})`
-    context.beginPath()
-    context.moveTo(0, y + wobble(0))
-    for (let x = 0; x <= width; x += 12) context.lineTo(x, y + wobble(x))
-    for (let x = width; x >= 0; x -= 12) context.lineTo(x, y + thickness + wobble(x))
-    context.closePath()
-    context.fill()
+    for (const offsetX of [-width, 0, width]) {
+      context.beginPath()
+      context.moveTo(offsetX, y + wobble(0))
+      for (let x = 0; x <= width; x += 12) context.lineTo(x + offsetX, y + wobble(x))
+      for (let x = width; x >= 0; x -= 12) context.lineTo(x + offsetX, y + thickness + wobble(x))
+      context.closePath()
+      context.fill()
+    }
   }
 
   // Fine grain — kills the smooth-gradient "painted" feel up close.
@@ -171,8 +174,134 @@ export function terrainNoise(x: number, z: number) {
 }
 
 /* ------------------------------------------------------------------ */
-/* Procedural ground surfaces                                          */
+/* Atmospheric map enhancement                                         */
 /* ------------------------------------------------------------------ */
+
+export interface AtmosphereEnhanceOptions {
+  saturation?: number
+  contrast?: number
+  brightness?: number
+  /** Amount of added banded structure (0..~1.5). */
+  bandStrength?: number
+  /** Fine grain amount (0..1). */
+  grain?: number
+  max_width?: number
+}
+
+/**
+ * Visual-enhancement pass for real atmospheric maps: colour punch plus
+ * composited banded structure, cloud masses, turbulence streaks and grain
+ * painted straight into the map pixels. Accuracy is deliberately sacrificed
+ * for readability — flat-looking true-colour atmospheres (Saturn's haze,
+ * Uranus' near-featureless methane) become rich, textured environments while
+ * keeping their genuine large-scale features.
+ */
+export function enhanceAtmosphereImage(
+  image: HTMLImageElement,
+  options: AtmosphereEnhanceOptions = {},
+): HTMLCanvasElement {
+  const {
+    saturation = 1,
+    contrast = 1,
+    brightness = 1,
+    bandStrength = 0.8,
+    grain = 0.5,
+    max_width = 2048,
+  } = options
+
+  const scale = Math.min(1, max_width / image.width)
+  const W = Math.max(4, Math.round(image.width * scale))
+  const H = Math.max(2, Math.round(image.height * scale))
+  const { canvas, context } = makeCanvas(W, H)
+
+  context.filter = `saturate(${saturation}) contrast(${contrast}) brightness(${brightness})`
+  context.drawImage(image, 0, 0, W, H)
+  context.filter = 'none'
+
+  const tone = (alpha: number, light: boolean) =>
+    light ? `rgba(255,255,255,${alpha})` : `rgba(8,8,12,${alpha})`
+
+  // Broad soft-light bands — structure even where the planet truly has none.
+  const bandCount = Math.round(8 + 10 * bandStrength)
+  for (let i = 0; i < bandCount; i++) {
+    const y = Math.random() * H
+    const thickness = H * (0.02 + Math.random() * 0.07)
+    const alpha = (0.09 + Math.random() * 0.17) * bandStrength
+    const light = Math.random() > 0.45
+    const gradient = context.createLinearGradient(0, y - thickness / 2, 0, y + thickness / 2)
+    gradient.addColorStop(0, tone(0, light))
+    gradient.addColorStop(0.5, tone(alpha, light))
+    gradient.addColorStop(1, tone(0, light))
+    context.globalCompositeOperation = 'soft-light'
+    context.fillStyle = gradient
+    context.fillRect(0, y - thickness / 2, W, thickness)
+  }
+
+  // Cloud masses — elongated soft blobs composited for local contrast.
+  for (let i = 0; i < 18; i++) {
+    const x = Math.random() * W
+    const y = Math.random() * H
+    const length = 90 + Math.random() * 240
+    const thick = 12 + Math.random() * 34
+    const angle = (Math.random() - 0.5) * 0.3
+    const light = Math.random() > 0.5
+    const alpha = 0.07 + Math.random() * 0.11
+    for (const offsetX of [-W, 0, W]) {
+      context.globalCompositeOperation = 'overlay'
+      context.save()
+      context.translate(x + offsetX, y)
+      context.rotate(angle)
+      context.scale(length / thick, 1)
+      const blob = context.createRadialGradient(0, 0, 0, 0, 0, thick)
+      blob.addColorStop(0, tone(alpha, light))
+      blob.addColorStop(1, tone(0, light))
+      context.fillStyle = blob
+      context.beginPath()
+      context.arc(0, 0, thick, 0, Math.PI * 2)
+      context.fill()
+      context.restore()
+    }
+  }
+
+  // Turbulence streaks — two-frequency wobble lines, wrapped horizontally.
+  for (let i = 0; i < Math.round(30 + 40 * bandStrength); i++) {
+    const y = Math.random() * H
+    const thickness = 2 + Math.random() * 10
+    const alpha = 0.05 + Math.random() * 0.1
+    const light = Math.random() > 0.5
+    const f1 = 1 + Math.floor(Math.random() * 3)
+    const f2 = 4 + Math.floor(Math.random() * 5)
+    const p1 = Math.random() * Math.PI * 2
+    const p2 = Math.random() * Math.PI * 2
+    const amp = thickness * 0.8
+    const wobble = (x: number) =>
+      Math.sin((x / W) * Math.PI * f1 + p1) * amp +
+      Math.sin((x / W) * Math.PI * f2 + p2) * amp * 0.35
+    context.globalCompositeOperation = 'overlay'
+    context.fillStyle = tone(alpha, light)
+    for (const offsetX of [-W, 0, W]) {
+      context.beginPath()
+      context.moveTo(offsetX, y + wobble(0))
+      for (let x = 0; x <= W; x += 12) context.lineTo(x + offsetX, y + wobble(x))
+      for (let x = W; x >= 0; x -= 12) context.lineTo(x + offsetX, y + thickness + wobble(x))
+      context.closePath()
+      context.fill()
+    }
+  }
+  context.globalCompositeOperation = 'source-over'
+
+  // Fine grain — crispness up close.
+  for (let i = 0; i < Math.round(1600 * grain); i++) {
+    const size = 0.8 + Math.random() * 1.7
+    const light = Math.random() > 0.5
+    context.fillStyle = light
+      ? `rgba(255,255,255,${0.03 + Math.random() * 0.06})`
+      : `rgba(0,0,0,${0.03 + Math.random() * 0.07})`
+    context.fillRect(Math.random() * W, Math.random() * H, size, size)
+  }
+
+  return canvas
+}
 
 export interface SurfaceStyle {
   /** Base tones blended by noise (first entry is the dominant colour). */

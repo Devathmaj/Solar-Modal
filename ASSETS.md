@@ -108,24 +108,36 @@ under `public/assets/planets/`:
 
 Files: `src/components/planet-worlds/*`, `src/config/planetWorlds.ts`.
 
-## 7. Real atmospheric maps inside the gas-giant worlds
+## 7. Real atmospheric & photosphere maps inside planet worlds
 
-The interiors of Jupiter, Saturn, Uranus and Neptune are clad in **real
-spacecraft-derived equirectangular (cylindrical) cloud maps**, applied to the
-continuous gas wall (`GasWalls`) so the visitor is surrounded by that planet's
-actual cloud structure. Base imagery is NASA public domain; map projections
-were processed by Björn Jónsson ([bjj.mmedia.is](https://bjj.mmedia.is)),
-whose planetary maps are published for public use with attribution.
+The interiors of Jupiter, Saturn, Uranus, Neptune — and now the **Sun** and
+**Venus** — are clad in **real spacecraft/observatory-derived equirectangular
+maps**, applied to the continuous gas wall (`GasWalls`) so the visitor is
+surrounded by that body's actual cloud/granulation structure.
+
+**Gas giants** (NASA public domain, map processing by Björn Jónsson,
+[bjj.mmedia.is](https://bjj.mmedia.is), used with attribution):
 
 | | |
 |---|---|
-| **Jupiter** | `public/assets/planets/real-maps/jupiter_voyager2_cylindrical.jpg` (~2.7 MB) — global cloud map built from NASA/JPL Voyager 2 imagery, processing B. Jónsson |
+| **Jupiter** | `public/assets/planets/real-maps/jupiter_voyager2_cylindrical.jpg` (~2.7 MB) — global cloud map from NASA/JPL Voyager 2 imagery, processing B. Jónsson |
 | **Saturn** | `public/assets/planets/real-maps/saturn_cassini_cylindrical.jpg` (~1.0 MB) — global map from NASA/JPL/SSI Cassini imagery, processing B. Jónsson |
 | **Uranus** | `public/assets/planets/real-maps/uranus_voyager2_cylindrical.png` (~250 KB) — cylindrical map from NASA/JPL-Caltech Voyager 2 data, processing B. Jónsson (hosted by The Planetary Society) |
 | **Neptune** | `public/assets/planets/real-maps/neptune_voyager2_cylindrical.jpg` (~310 KB) — simple-cylindrical map assembled from 27 orange/green/blue Voyager 2 frames (1989), processing B. Jónsson |
-| **License** | NASA imagery: public domain (NASA Media Usage Guidelines). Derived map processing © Björn Jónsson — used with attribution, non-commercial portfolio context |
-| **Processing** | Loaded maps receive an in-engine **visual-enhancement pass** (`enhanceAtmosphereImage`): saturation/contrast boost plus composited soft-light banding, overlay cloud masses, turbulence streaks and fine grain painted into the map pixels. This deliberately sacrifices strict colour accuracy for readability — the true-colour versions of Saturn/Uranus/Neptune are nearly featureless. Maps wrap horizontally by construction, closing the gas wall seamlessly. A counter-scrolling **procedural detail sheen** (canvas-generated, per §6 technique) is layered on top for wind-shear motion — no additional downloaded assets |
-| **Used by** | `JupiterWorld.tsx`, `SaturnWorld.tsx`, `UranusWorld.tsx`, `NeptuneWorld.tsx` via `GasWalls` |
+
+**Sun & Venus** reuse the §1 Solar System Scope maps (CC BY 4.0) as
+photosphere/cloud-deck walls:
+
+| | |
+|---|---|
+| **Sun** | `sun/2k_sun.jpg` — real granulation/convection cells wrap the photosphere wall |
+| **Venus** | `venus/2k_venus_atmosphere.jpg` — real sulfuric-acid cloud deck wraps the atmosphere wall |
+
+| | |
+|---|---|
+| **License** | NASA imagery: public domain. B. Jónsson derived maps: attribution, non-commercial portfolio context. Solar System Scope maps: CC BY 4.0 |
+| **Processing** | Loaded maps receive an in-engine **visual-enhancement pass** (`enhanceAtmosphereImage`): saturation/contrast boost plus composited soft-light banding, overlay cloud masses, turbulence streaks and fine grain painted into the map pixels — deliberately sacrificing strict colour accuracy for readability. Maps wrap horizontally by construction, closing the wall seamlessly. A counter-scrolling **procedural detail sheen** is layered on top for wind-shear motion. Rocky-world terrain remains fully procedural (§6) with geometric crater carving |
+| **Used by** | `SunWorld.tsx`, `VenusWorld.tsx`, `JupiterWorld.tsx`, `SaturnWorld.tsx`, `UranusWorld.tsx`, `NeptuneWorld.tsx` via `GasWalls` |
 
 Design notes grounded in mission science: Jupiter's interior look follows its
 three known cloud decks — high white ammonia cirrus, reddish-brown

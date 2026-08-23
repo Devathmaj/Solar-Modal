@@ -70,7 +70,7 @@ export const WORLDS: Record<BodyId, WorldMeta> = {
     title: 'SUN',
     section: 'Overview',
     fadeColor: '#ffbf6e',
-    fog: ['#e07820', 0.028],
+    fog: ['#e07820', 0.01],
     camera: {
       anchor: [0, 1.4, -5],
       distance: 8,
@@ -102,7 +102,7 @@ export const WORLDS: Record<BodyId, WorldMeta> = {
     title: 'VENUS',
     section: 'Testimonials',
     fadeColor: '#dba750',
-    fog: ['#cf9a48', 0.05],
+    fog: ['#cf9a48', 0.009],
     camera: {
       anchor: [0, 1.5, -5.5],
       distance: 7.5,
@@ -118,7 +118,7 @@ export const WORLDS: Record<BodyId, WorldMeta> = {
     title: 'EARTH',
     section: 'Projects',
     fadeColor: '#bdd8f4',
-    fog: ['#b7d4ee', 0.009],
+    fog: ['#b7d4ee', 0.006],
     camera: {
       anchor: [0, 1.7, -6],
       distance: 9,
@@ -134,7 +134,7 @@ export const WORLDS: Record<BodyId, WorldMeta> = {
     title: 'MARS',
     section: 'Experience',
     fadeColor: '#cb8c60',
-    fog: ['#c98a5f', 0.02],
+    fog: ['#c98a5f', 0.012],
     camera: {
       anchor: [0, 1.5, -6],
       distance: 8.5,

@@ -22,7 +22,8 @@ export default function EarthWorld() {
       <directionalLight intensity={0.4} color="#9ecbff" position={[-32, -10, 24]} />
       <hemisphereLight args={['#9ecbff', '#6a8f5a', 0.6]} />
 
-      <SkyDome top="#2e6fd0" mid="#7fb4ea" bottom="#d9ecfb" />
+      {/* Bottom matches fog — horizon haze, no hard cutoff */}
+      <SkyDome top="#2e6fd0" mid="#7fb4ea" bottom="#b7d4ee" />
 
       <DistantSunSprite
         direction={[0.45, 0.62, -0.4]}
@@ -46,6 +47,9 @@ export default function EarthWorld() {
         bumpScale={0.05}
         boulders={BOULDERS}
       />
+
+      {/* Distant cumulus bank hugging the horizon */}
+      <CloudPuffs count={8} color="#f4f8ff" radius={105} height={5} band={3} minScale={55} maxScale={100} opacity={0.15} speed={0.003} />
 
       {/* Faint near-ground sparkle: pollen / moisture in the air */}
       <ParticleField count={220} color="#ffffff" size={0.16} opacity={0.22} spread={[40, 14, 40]} spinSpeed={0.01} />

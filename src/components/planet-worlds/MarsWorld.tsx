@@ -24,7 +24,8 @@ export default function MarsWorld() {
       <directionalLight intensity={0.32} color="#a8bcdc" position={[-30, -8, 26]} />
       <hemisphereLight args={['#d99a66', '#7a3f22', 0.5]} />
 
-      <SkyDome top="#a05a35" mid="#cf8f5c" bottom="#eac094" />
+      {/* Bottom matches fog — ground melts into sky, never cuts off */}
+      <SkyDome top="#a05a35" mid="#cf8f5c" bottom="#c98a5f" />
 
       {/* The Sun as seen from Mars — smaller and paler */}
       <DistantSunSprite
@@ -42,9 +43,13 @@ export default function MarsWorld() {
         curvatureRadius={1350}
         tintA="#e8c4a0"
         tintB="#7d4526"
-        bumpScale={0.08}
+        bumpScale={0.09}
+        carve={{ count: 15, minRadius: 5, maxRadius: 17, depth: 1.5, rim: 0.45 }}
         boulders={BOULDERS}
       />
+
+      {/* Distant dust wall hugging the horizon — breaks the flat sky */}
+      <CloudPuffs count={7} color="#d9a06c" radius={95} height={3} band={2} minScale={55} maxScale={95} opacity={0.13} speed={0.004} />
 
       {/* Settling dust — ever-present on Mars */}
       <ParticleField

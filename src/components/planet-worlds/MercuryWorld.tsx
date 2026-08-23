@@ -24,8 +24,9 @@ export default function MercuryWorld() {
       <directionalLight intensity={0.32} color="#8fa3c8" position={[-40, -10, 30]} />
       <hemisphereLight args={['#3d465c', '#16130f', 0.4]} />
 
-      {/* Near-black sky so the stars read as airless-space stars */}
-      <SkyDome top="#010204" mid="#040404" bottom="#0a0908" />
+      {/* Near-black sky so the stars read as airless-space stars; bottom
+          matches fog so the terrain fades seamlessly */}
+      <SkyDome top="#010204" mid="#040404" bottom="#0d0c0b" />
       <StarPoints count={1100} size={1.7} opacity={0.95} />
 
       <DistantSunSprite
@@ -43,7 +44,8 @@ export default function MercuryWorld() {
         curvatureRadius={1050}
         tintA="#ffffff"
         tintB="#8d867e"
-        bumpScale={0.09}
+        bumpScale={0.11}
+        carve={{ count: 26, minRadius: 6, maxRadius: 26, depth: 2.4, rim: 0.55 }}
         boulders={BOULDERS}
       />
     </>

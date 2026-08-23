@@ -1,39 +1,20 @@
-import { useEffect, useMemo, useRef } from 'react'
-import { useFrame } from '@react-three/fiber'
-import * as THREE from 'three'
-import { CloudPuffs, FlickerLight, GasSkyDome, ParticleField } from './WorldEnvironment'
-import { createBandTexture } from './worldAssets'
+import { CloudPuffs, FlickerLight, GasSkyDome, GasWalls, ParticleField } from './WorldEnvironment'
+import { mirrorStops } from './worldAssets'
 
 // Full-surround photosphere ramp — zenith glare down to deep convection.
 const SKY_STOPS = ['#fff6d8', '#ffdf9a', '#ffae48', '#e87218', '#a83c08', '#5e1500']
-// Matches the world fog so the glowing deck dissolves into the glow.
+// Mirrored twin drives the seamless detail sheen over the real map.
+const BAND_STOPS = mirrorStops(SKY_STOPS)
+// Matches the world fog so the wall dissolves into the glow.
 const HORIZON = '#e07820'
 
 /**
  * Entering the Sun is not stepping onto a floor — the camera hangs inside a
- * stylized photosphere: a roiling granulation deck far below dissolving into
- * the surrounding solar glow, sparks rising all around. No hard edges exist:
- * the deck is fog-blended and the sky carries the same plasma palette.
+ * stylized photosphere: the real granulation texture (SDO-style convection
+ * cells) wraps around on a continuous wall, sparks rise all around, and the
+ * whole surround glows with the solar ramp. No hard edges exist anywhere.
  */
 export default function SunWorld() {
-  const plasmaRef = useRef<THREE.Mesh>(null!)
-
-  const plasmaTexture = useMemo(
-    () =>
-      createBandTexture({
-        stops: ['#fff0b8', '#ffc451', '#ff8412', '#c23a00', '#5e0f00'],
-        streaks: 90,
-      }),
-    [],
-  )
-
-  useEffect(() => () => plasmaTexture.dispose(), [plasmaTexture])
-
-  useFrame((_, delta) => {
-    plasmaTexture.offset.y += delta * 0.012
-    if (plasmaRef.current) plasmaRef.current.rotation.y += delta * 0.01
-  })
-
   return (
     <>
       <ambientLight intensity={1.15} color="#ffd9a0" />
@@ -41,11 +22,19 @@ export default function SunWorld() {
 
       <GasSkyDome stops={SKY_STOPS} turb={0.16} drift={0.09} horizonColor={HORIZON} horizonSoftness={0.32} />
 
-      {/* Roiling granulation deck — fog blends its edges into the glow */}
-      <mesh ref={plasmaRef} rotation={[-Math.PI / 2, 0, 0]} position={[0, -38, 0]}>
-        <planeGeometry args={[900, 900]} />
-        <meshBasicMaterial map={plasmaTexture} toneMapped={false} />
-      </mesh>
+      {/* Continuous photosphere wall clad in the real Sun granulation map.
+          Negative drift = both map and sheen churn consistently upward. */}
+      <GasWalls
+        stops={BAND_STOPS}
+        texturePath="/assets/planets/sun/2k_sun.jpg"
+        opacity={0.97}
+        detailOpacity={0.14}
+        tint="#fff2d0"
+        hRepeat={2}
+        driftSpeed={-0.005}
+        bumpScale={0.3}
+        enhance={{ saturation: 1.35, contrast: 1.22, brightness: 1.06, bandStrength: 0.45, grain: 0.45 }}
+      />
 
       {/* Rising plasma sparks */}
       <ParticleField

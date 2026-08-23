@@ -394,6 +394,29 @@ export function createSurfaceTexture(style: SurfaceStyle, resolution = 1024) {
     )
   }
 
+  // Mid-scale tonal modulation — bridges the blotch→speckle gap so the
+  // surface never reads as flat paint between detail octaves.
+  context.globalCompositeOperation = 'overlay'
+  for (let i = 0; i < 240; i++) {
+    const x = Math.random() * W
+    const y = Math.random() * H
+    const r = 4 + Math.random() * 14
+    const base = palette[Math.floor(Math.random() * palette.length)]
+    const light = Math.random() > 0.5
+    for (const offsetX of [-W, 0, W]) {
+      for (const offsetY of [-H, 0, H]) {
+        const g = context.createRadialGradient(x + offsetX, y + offsetY, 0, x + offsetX, y + offsetY, r)
+        g.addColorStop(0, rgba(base, 0.05 + Math.random() * 0.07, light ? 1.3 : 0.65))
+        g.addColorStop(1, rgba(base, 0))
+        context.fillStyle = g
+        context.beginPath()
+        context.arc(x + offsetX, y + offsetY, r, 0, Math.PI * 2)
+        context.fill()
+      }
+    }
+  }
+  context.globalCompositeOperation = 'source-over'
+
   // Impact craters — dark floor, lit rim on the sunward side, shadow opposite.
   if (style.craters) {
     const [minR, maxR] = style.craterSize ?? [3, 13]
@@ -493,4 +516,64 @@ export function rockySurfaceHeight(
     height -= curvatureRadius - Math.sqrt(Math.max(curvatureRadius * curvatureRadius - r2, 0))
   }
   return height
+}
+
+/* ------------------------------------------------------------------ */
+/* Geometric crater carving                                            */
+/* ------------------------------------------------------------------ */
+
+export interface CraterFieldOptions {
+  /** Number of impact structures carved into the geometry itself. */
+  count: number
+  minRadius: number
+  maxRadius: number
+  /** Bowl depth in world units. */
+  depth: number
+  /** Rim uplift as a fraction of depth. */
+  rim?: number
+}
+
+/**
+ * Pre-computes a set of impact craters and returns a height-contribution
+ * function over (x, z): a smooth bowl with a raised rim. Applied to the
+ * terrain vertices this gives true parallax at the horizon — craters you can
+ * see and walk around, not just darker paint.
+ */
+export function makeCraterField(
+  options: CraterFieldOptions,
+  extent: number,
+): (x: number, z: number) => number {
+  const { count, minRadius, maxRadius, depth, rim = 0.5 } = options
+  const half = extent / 2
+  const craters: Array<{ x: number; z: number; r: number }> = []
+  for (let i = 0; i < count; i++) {
+    let x = 0
+    let z = 0
+    // Keep the content-anchor clearing un-cratered.
+    do {
+      x = (Math.random() - 0.5) * extent
+      z = (Math.random() - 0.5) * extent
+    } while (Math.hypot(x, z) < 20)
+    craters.push({ x, z, r: minRadius + Math.random() * (maxRadius - minRadius) })
+  }
+  void half
+
+  return (x: number, z: number) => {
+    let contribution = 0
+    for (let i = 0; i < craters.length; i++) {
+      const c = craters[i]
+      const d = Math.hypot(x - c.x, z - c.z)
+      if (d > c.r * 1.5) continue
+      const t = d / c.r
+      // Bowl: deepest at the centre, easing out to the rim base.
+      if (t < 1) {
+        const bowl = 0.5 + 0.5 * Math.cos(t * Math.PI)
+        contribution -= depth * bowl
+      }
+      // Raised rim straddling the edge.
+      const rimT = (t - 1) / 0.3
+      contribution += depth * rim * Math.exp(-rimT * rimT)
+    }
+    return contribution
+  }
 }

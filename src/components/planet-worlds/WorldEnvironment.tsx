@@ -8,9 +8,11 @@ import {
   createRockSurfaceTexture,
   createSurfaceTexture,
   enhanceAtmosphereImage,
+  makeCraterField,
   rockySurfaceHeight,
   terrainNoise,
   type AtmosphereEnhanceOptions,
+  type CraterFieldOptions,
   type SurfaceStyle,
 } from './worldAssets'
 
@@ -442,6 +444,8 @@ interface RockyGroundProps {
   tintB?: string
   bumpScale?: number
   boulders?: BoulderSpec
+  /** Impact craters carved into the geometry — true parallax relief. */
+  carve?: CraterFieldOptions
 }
 
 /**
@@ -461,8 +465,14 @@ export function RockyGround({
   tintB = '#9a9a9a',
   bumpScale = 0.035,
   boulders,
+  carve,
 }: RockyGroundProps) {
   const gl = useThree((state) => state.gl)
+
+  const craterFn = useMemo(
+    () => (carve ? makeCraterField(carve, size) : null),
+    [carve, size],
+  )
 
   const { geometry, material } = useMemo(() => {
     const planeGeometry = new THREE.PlaneGeometry(size, size, segments, segments)
@@ -487,6 +497,9 @@ export function RockyGround({
           terrainNoise(x * 3.13 + 5, z * 3.07 + 9) * 0.22) *
         displacement *
         falloff
+
+      // Carved impact craters — real geometric relief with parallax.
+      if (craterFn) height += craterFn(x, z) * falloff
 
       // Planetary curvature: drop below the tangent plane like on a sphere.
       if (curvatureRadius && curvatureRadius > 0) {
@@ -525,7 +538,7 @@ export function RockyGround({
         vertexColors: true,
       }),
     }
-  }, [style, size, segments, repeat, displacement, curvatureRadius, tintA, tintB, bumpScale, gl])
+  }, [style, size, segments, repeat, displacement, curvatureRadius, tintA, tintB, bumpScale, gl, craterFn])
 
   useEffect(
     () => () => {
@@ -538,9 +551,17 @@ export function RockyGround({
 
   return (
     <>
-      <mesh geometry={geometry} material={material} />
+      {/* Single large mesh — never frustum-cull it: displaced vertices and
+          curvature make bounds angle-sensitive, and a vanished horizon is
+          far worse than one extra draw call. */}
+      <mesh geometry={geometry} material={material} frustumCulled={false} />
       {boulders && (
-        <Boulders spec={boulders} displacement={displacement} curvatureRadius={curvatureRadius} />
+        <Boulders
+          spec={boulders}
+          displacement={displacement}
+          curvatureRadius={curvatureRadius}
+          craterFn={craterFn}
+        />
       )}
     </>
   )
@@ -551,10 +572,12 @@ function Boulders({
   spec,
   displacement,
   curvatureRadius,
+  craterFn,
 }: {
   spec: BoulderSpec
   displacement: number
   curvatureRadius: number | undefined
+  craterFn: ((x: number, z: number) => number) | null
 }) {
   const { geometry, material, mesh } = useMemo(() => {
     // Low-seg sphere displaced per-vertex: smoother craggy silhouettes than a
@@ -610,11 +633,10 @@ function Boulders({
       } while (Math.hypot(x, z) < 8)
 
       const scale = spec.minScale + Math.random() * (spec.maxScale - spec.minScale)
-      dummy.position.set(
-        x,
-        rockySurfaceHeight(x, z, displacement, curvatureRadius) + scale * 0.25,
-        z,
-      )
+      const groundY =
+        rockySurfaceHeight(x, z, displacement, curvatureRadius) +
+        (craterFn ? craterFn(x, z) * THREE.MathUtils.smoothstep(Math.hypot(x, z), 4, 26) : 0)
+      dummy.position.set(x, groundY + scale * 0.25, z)
       dummy.rotation.set(Math.random() * Math.PI, Math.random() * Math.PI, Math.random() * Math.PI)
       dummy.scale.set(scale * (0.7 + Math.random() * 0.6), scale * (0.6 + Math.random() * 0.5), scale * (0.7 + Math.random() * 0.6))
       dummy.updateMatrix()
@@ -628,7 +650,7 @@ function Boulders({
     if (instanced.instanceColor) instanced.instanceColor.needsUpdate = true
 
     return { geometry: rockGeometry, material: rockMaterial, mesh: instanced }
-  }, [spec, displacement, curvatureRadius])
+  }, [spec, displacement, curvatureRadius, craterFn])
 
   useEffect(
     () => () => {

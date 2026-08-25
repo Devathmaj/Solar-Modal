@@ -152,7 +152,7 @@ export const MERCURY_TERRAIN: PlanetTerrainConfig = {
   surfaceTint: '#b3aba1',
   roughness: 0.92,
   metalness: 0.02,
-  bumpScale: 0.6,
+  bumpScale: 0.25,
   texturePath: '/assets/planets/surface-textures/mercury_rock_ground_2k.jpg',
   microDetail: {
     rockDensity: 12,
@@ -236,7 +236,7 @@ export const EARTH_TERRAIN: PlanetTerrainConfig = {
   surfaceTint: '#8a9a6a',
   roughness: 0.85,
   metalness: 0.02,
-  bumpScale: 0.5,
+  bumpScale: 0.2,
   texturePath: '/assets/planets/surface-textures/earth_ground_2k.jpg',
   microDetail: {
     rockDensity: 5,
@@ -282,7 +282,7 @@ export const MARS_TERRAIN: PlanetTerrainConfig = {
   surfaceTint: '#b06838',
   roughness: 0.9,
   metalness: 0.02,
-  bumpScale: 0.6,
+  bumpScale: 0.25,
   texturePath: '/assets/planets/surface-textures/mars_rocky_terrain_2k.jpg',
   microDetail: {
     rockDensity: 15,

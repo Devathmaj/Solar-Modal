@@ -15,7 +15,7 @@ import { useThree } from '@react-three/fiber'
 import { useTexture } from '@react-three/drei'
 import * as THREE from 'three'
 import type { PlanetTerrainConfig } from './terrainConfig'
-import { generateTileHeightmap, generateCraters, heightmapToNormals } from './heightmapGenerator'
+import { generateTileHeightmap, generateCraters } from './heightmapGenerator'
 
 interface TerrainGroundProps {
   config: PlanetTerrainConfig
@@ -72,11 +72,35 @@ export function TerrainGround({ config }: TerrainGroundProps) {
     }
     posAttr.needsUpdate = true
 
-    // Compute normals from heightmap gradient
-    const computedNormals = heightmapToNormals(heightmap, segments, size)
+    // Compute normals directly from heightmap gradient (cross product of
+    // tangent vectors). This gives the exact surface normal at every vertex
+    // regardless of curvature or sharp elevation changes.
     const normalAttr = plane.attributes.normal as THREE.BufferAttribute
-    for (let i = 0; i < normalAttr.count; i++) {
-      normalAttr.setXYZ(i, computedNormals[i * 3], computedNormals[i * 3 + 1], computedNormals[i * 3 + 2])
+    for (let iz = 0; iz <= segments; iz++) {
+      for (let ix = 0; ix <= segments; ix++) {
+        const idx = iz * (segments + 1) + ix
+
+        // Height of neighboring vertices (clamp at edges)
+        const hL = ix > 0 ? heightmap[idx - 1] : heightmap[idx]
+        const hR = ix < segments ? heightmap[idx + 1] : heightmap[idx]
+        const hU = iz > 0 ? heightmap[(iz - 1) * (segments + 1) + ix] : heightmap[idx]
+        const hD = iz < segments ? heightmap[(iz + 1) * (segments + 1) + ix] : heightmap[idx]
+
+        // Tangent vectors along the surface.
+        // World Z is inverted relative to heightmap iz (plane.rotateX(-PI/2)),
+        // so the world-space Z gradient is (hD - hU), not (hU - hD).
+        const invStep = segments / size
+        const dx = (hL - hR) * invStep
+        const dz = (hD - hU) * invStep
+
+        // Normal = cross product of tangent vectors (unnormalized then normalized)
+        const nx = dx
+        const ny = 1.0
+        const nz = dz
+        const len = Math.sqrt(nx * nx + ny * ny + nz * nz) || 1
+
+        normalAttr.setXYZ(idx, nx / len, ny / len, nz / len)
+      }
     }
     normalAttr.needsUpdate = true
 
@@ -99,8 +123,6 @@ export function TerrainGround({ config }: TerrainGroundProps) {
       surfaceMap.anisotropy = gl.capabilities.getMaxAnisotropy()
       surfaceMap.needsUpdate = true
       materialParams.map = surfaceMap
-      materialParams.bumpMap = surfaceMap
-      materialParams.bumpScale = config.bumpScale
     }
 
     const mat = new THREE.MeshStandardMaterial(materialParams)
@@ -113,9 +135,6 @@ export function TerrainGround({ config }: TerrainGroundProps) {
       geometry.dispose()
       material.dispose()
       if (material.map) material.map.dispose()
-      if (material.bumpMap && material.bumpMap !== material.map) {
-        material.bumpMap.dispose()
-      }
     }
   }, [geometry, material])
 

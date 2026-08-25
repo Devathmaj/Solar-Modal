@@ -28,7 +28,7 @@
  */
 
 import { CloudPuffs, DistantSunSprite, ParticleField, SkyDome } from './WorldEnvironment'
-import { TerrainGround, RockScatter, TerrainCracks, TerrainGrainOverlay, MARS_TERRAIN } from './terrain'
+import { TerrainGround, RockScatter, TerrainCracks, MARS_TERRAIN } from './terrain'
 
 /**
  * Mars: a cold butterscotch sky, rust-coloured regolith with abundant
@@ -44,9 +44,10 @@ export default function MarsWorld() {
     <>
       <ambientLight intensity={0.26} />
       <directionalLight intensity={1.45} color="#ffd9b0" position={[26, 20, -22]} />
-      {/* Dust-scattered fill: softens the terminator without flattening */}
-      <directionalLight intensity={0.32} color="#a8bcdc" position={[-30, -8, 26]} />
-      <hemisphereLight args={['#d99a66', '#7a3f22', 0.5]} />
+      {/* Dust-scattered fill: softens the terminator without flattening.
+          Y must be positive to avoid underlighting the terrain. */}
+      <directionalLight intensity={0.32} color="#a8bcdc" position={[-30, 12, 26]} />
+      <hemisphereLight args={['#d99a66', '#3a2010', 0.5]} />
 
       {/* Mars butterscotch sky gradient */}
       <SkyDome top="#a05a35" mid="#cf8f5c" bottom="#c98a5f" />
@@ -76,9 +77,6 @@ export default function MarsWorld() {
 
       {/* Terrain crack lines — Mars surface fracturing */}
       <TerrainCracks config={MARS_TERRAIN} count={15} />
-
-      {/* Close-range grain overlay for sand/dust texture */}
-      <TerrainGrainOverlay opacity={0.15} size={300} color="#c49a6a" />
 
       {/* Distant dust wall hugging the horizon */}
       <CloudPuffs count={10} color="#d9a06c" radius={120} height={5} band={3} minScale={75} maxScale={115} opacity={0.18} speed={0.006} />

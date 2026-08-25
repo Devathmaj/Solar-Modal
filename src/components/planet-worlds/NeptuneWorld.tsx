@@ -37,16 +37,15 @@ export default function NeptuneWorld() {
       <hemisphereLight args={['#8fb2f2', '#0c1836', 0.6]} />
       <directionalLight intensity={1.0} color="#cfe0ff" position={[40, 64, -32]} />
 
-      {/* Continuous gas wall — tight cylinder for immersive atmosphere */}
+      {/* Continuous gas wall — raw Voyager 2 map, no tint for natural depth */}
       <GasWalls
         stops={BAND_STOPS}
         texturePath="/assets/planets/real-maps/neptune_voyager2_cylindrical.jpg"
         opacity={0.97}
-        detailOpacity={0.30}
-        tint="#e0f0ff"
+        detailOpacity={0}
         hRepeat={2}
         driftSpeed={0.012}
-        bumpScale={0.35}
+        bumpScale={0.8}
         radius={60}
         height={500}
       />

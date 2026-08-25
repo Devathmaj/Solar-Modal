@@ -29,16 +29,15 @@ export default function SaturnWorld() {
         <meshBasicMaterial color="#1c130a" transparent opacity={0.16} depthWrite={false} side={THREE.DoubleSide} />
       </mesh>
 
-      {/* Continuous gas wall — tight cylinder for immersive atmosphere */}
+      {/* Continuous gas wall — raw Cassini map, no tint for natural depth */}
       <GasWalls
         stops={BAND_STOPS}
         texturePath="/assets/planets/real-maps/saturn_cassini_cylindrical.jpg"
         opacity={0.97}
-        detailOpacity={0.30}
-        tint="#fff3d9"
+        detailOpacity={0}
         hRepeat={2}
         driftSpeed={0.004}
-        bumpScale={0.35}
+        bumpScale={0.8}
         radius={60}
         height={500}
       />

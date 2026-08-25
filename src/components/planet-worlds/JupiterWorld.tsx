@@ -39,16 +39,15 @@ export default function JupiterWorld() {
       <hemisphereLight args={['#e8c090', '#4a2810', 0.65]} />
       <directionalLight intensity={1.15} color="#ffd9a8" position={[42, 70, -34]} />
 
-      {/* Continuous banded gas wall — raw Voyager 2 map, no enhancement for seamless boundaries */}
+      {/* Continuous banded gas wall — raw Voyager 2 map, no tint for natural depth */}
       <GasWalls
         stops={BAND_STOPS}
         texturePath="/assets/planets/real-maps/jupiter_voyager2_cylindrical.jpg"
         opacity={0.96}
         detailOpacity={0}
-        tint="#d4a898"
         hRepeat={2}
         driftSpeed={0.006}
-        bumpScale={0.45}
+        bumpScale={0.8}
         radius={60}
         height={500}
       />

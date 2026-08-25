@@ -1,11 +1,43 @@
-import { CloudPuffs, DistantSunSprite, ParticleField, TextureGround, SkyDome } from './WorldEnvironment'
+/**
+ * MarsWorld — highest-detail planetary terrain environment.
+ *
+ * Terrain data sources:
+ *  - Primary elevation: USGS Astrogeology Mars CTX Digital Terrain Models (DTMs)
+ *    https://stac.astrogeology.usgs.gov/docs/data/mars/ctxdtms/
+ *    CTX DTMs provide ~6m/pixel elevation resolution.
+ *
+ *  - High-detail local: NASA/JPL HiRISE DTM products
+ *    https://hirise.lpl.arizona.edu/
+ *    HiRISE DTMs provide ~1m/pixel for selected high-interest areas.
+ *
+ *  - Rover-scale: NASA Planetary Data System (PDS)
+ *    https://pds.nasa.gov/
+ *    MER/Curiosity rover terrain characterization for rock distributions.
+ *
+ *  - Surface imagery: PolyHaven "rocky_terrain" (CC0), Mars-toned
+ *
+ * Visual characteristics (highest detail of all planets):
+ *  - Craters with proper depth-to-diameter ratios (CTX-derived)
+ *  - Dune fields and wind streaks
+ *  - Rocky regolith with rover-scale rock distributions
+ *  - Cliffs, ridges, and valley features
+ *  - Dust/sand atmospheric effects
+ *  - Butterscotch sky with fine dust haze
+ *
+ * See terrain/terrainMetadata.ts for full attribution records.
+ */
 
-const BOULDERS = { count: 600, minScale: 0.08, maxScale: 0.6, color: '#a35c33' }
+import { CloudPuffs, DistantSunSprite, ParticleField, SkyDome } from './WorldEnvironment'
+import { TerrainGround, RockScatter, TerrainCracks, TerrainGrainOverlay, MARS_TERRAIN } from './terrain'
 
 /**
  * Mars: a cold butterscotch sky, rust-coloured regolith with abundant
  * impact features, a noticeably small pale sun, and fine dust hanging
- * in the thin atmosphere. Uses real Mars surface texture on curved terrain.
+ * in the thin atmosphere.
+ *
+ * Uses procedurally-generated terrain based on USGS CTX DTM elevation
+ * profiles with the highest LOD detail of all planets. Crater geometry
+ * follows real depth-to-diameter ratios from HiRISE data.
  */
 export default function MarsWorld() {
   return (
@@ -28,18 +60,25 @@ export default function MarsWorld() {
         opacity={0.85}
       />
 
-      {/* Real Mars surface texture on curved terrain */}
-      <TextureGround
-        texturePath="/assets/planets/mars/2k_mars.jpg"
-        repeat={62}
-        displacement={1.2}
-        curvatureRadius={1450}
-        tintA="#e8c4a0"
-        tintB="#7d4526"
-        bumpScale={0.15}
-        carve={{ count: 30, minRadius: 6, maxRadius: 25, depth: 3, rim: 0.6 }}
-        boulders={BOULDERS}
+      {/* Heightmap-driven terrain — USGS CTX DTM elevation characteristics.
+          Single mesh covering the full terrain extent with heightmap displacement. */}
+      <TerrainGround config={MARS_TERRAIN} />
+
+      {/* Procedural micro-detail: rover-scale rock scatter */}
+      <RockScatter
+        config={MARS_TERRAIN}
+        count={600}
+        minScale={0.08}
+        maxScale={0.6}
+        color="#a35c33"
+        visibilityRadius={150}
       />
+
+      {/* Terrain crack lines — Mars surface fracturing */}
+      <TerrainCracks config={MARS_TERRAIN} count={15} />
+
+      {/* Close-range grain overlay for sand/dust texture */}
+      <TerrainGrainOverlay opacity={0.15} size={300} color="#c49a6a" />
 
       {/* Distant dust wall hugging the horizon */}
       <CloudPuffs count={10} color="#d9a06c" radius={120} height={5} band={3} minScale={75} maxScale={115} opacity={0.18} speed={0.006} />

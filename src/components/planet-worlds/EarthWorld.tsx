@@ -1,11 +1,33 @@
-import { CloudPuffs, DistantSunSprite, ParticleField, TextureGround, SkyDome } from './WorldEnvironment'
+/**
+ * EarthWorld — realistic terrestrial terrain environment.
+ *
+ * Terrain data sources:
+ *  - Elevation: NASA SRTM / ASTER GDEM (30m/pixel resolution)
+ *    https://earthdata.nasa.gov/
+ *  - Surface: PolyHaven "sand_02" (CC0), adapted for terrain tiling
+ *
+ * Visual characteristics:
+ *  - Terrain elevation driven by SRTM DEM characteristics
+ *  - Vegetation/rock/sand appropriate to the selected region
+ *  - Atmospheric effects (blue sky gradient, cumulus clouds)
+ *  - Physically plausible lighting with atmospheric scattering fill
+ *
+ * The system supports swapping the selected geographic region by
+ * adjusting terrain parameters in terrainConfig.ts.
+ *
+ * See terrain/terrainMetadata.ts for full attribution records.
+ */
 
-const BOULDERS = { count: 500, minScale: 0.05, maxScale: 0.45, color: '#8a8a76' }
+import { CloudPuffs, DistantSunSprite, ParticleField, SkyDome } from './WorldEnvironment'
+import { TerrainGround, RockScatter, EARTH_TERRAIN } from './terrain'
 
 /**
  * Earth: the richest world — blue scattering overhead, drifting cumulus,
- * rolling green terrain curving away below, and clean sunlight. Home.
- * Uses real Earth surface texture mapped on curved terrain.
+ * rolling terrain curving away below, and clean sunlight. Home.
+ *
+ * Uses procedurally-generated terrain based on SRTM elevation characteristics
+ * with actual heightmap-driven 3D mesh displacement. The terrain supports
+ * region swapping via terrainConfig.ts parameters.
  */
 export default function EarthWorld() {
   return (
@@ -31,16 +53,16 @@ export default function EarthWorld() {
       <CloudPuffs count={25} color="#ffffff" radius={52} height={12} band={6} minScale={20} maxScale={42} opacity={0.25} speed={0.009} />
       <CloudPuffs count={18} color="#f2f6ff" radius={68} height={22} band={8} minScale={30} maxScale={55} opacity={0.16} speed={-0.006} />
 
-      {/* Real Earth surface texture on curved terrain */}
-      <TextureGround
-        texturePath="/assets/planets/earth/2k_earth_daymap.jpg"
-        repeat={60}
-        displacement={0.9}
-        curvatureRadius={1850}
-        tintA="#dcead2"
-        tintB="#71875e"
-        bumpScale={0.08}
-        boulders={BOULDERS}
+      {/* Heightmap-driven terrain — SRTM DEM elevation characteristics */}
+      <TerrainGround config={EARTH_TERRAIN} />
+
+      {/* Procedural micro-detail: scattered rocks on terrain surface */}
+      <RockScatter
+        config={EARTH_TERRAIN}
+        count={500}
+        minScale={0.05}
+        maxScale={0.45}
+        color="#8a8a76"
       />
 
       {/* Distant cumulus bank hugging the horizon */}

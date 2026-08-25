@@ -1,12 +1,30 @@
-import { DistantSunSprite, TextureGround, TextureSkyDome, StarPoints } from './WorldEnvironment'
+/**
+ * MercuryWorld — airless, heavily cratered terrain environment.
+ *
+ * Terrain data sources:
+ *  - Elevation: USGS Astrogeology / NASA MESSENGER MLA (Mercury Laser Altimeter)
+ *    https://astrogeology.usgs.gov/
+ *  - Surface: PolyHaven "rock_ground" (CC0), color-corrected for Mercury regolith
+ *
+ * Visual characteristics:
+ *  - Extremely rocky, airless terrain with sharp shadows
+ *  - Cratered terrain with physically modeled crater bowls and rims
+ *  - Exposed rock/regolith with no atmospheric scattering
+ *  - Strong elevation changes around craters (MESSENGER-derived profiles)
+ *
+ * See terrain/terrainMetadata.ts for full attribution records.
+ */
 
-const BOULDERS = { count: 600, minScale: 0.08, maxScale: 0.6, color: '#8a827a' }
+import { DistantSunSprite, StarPoints, TextureSkyDome } from './WorldEnvironment'
+import { TerrainGround, RockScatter, TerrainCracks, MERCURY_TERRAIN } from './terrain'
 
 /**
  * Mercury: airless, heavily cratered world with extreme temperature differences.
  * No atmosphere means the sky is black, the sun is harsh, and every feature
  * is sharply defined by high-contrast lighting with sharp shadow definition.
- * Uses real Mercury surface texture mapped on curved terrain.
+ *
+ * Uses procedurally-generated terrain based on MESSENGER MLA elevation profiles
+ * with actual heightmap-driven 3D mesh displacement.
  */
 export default function MercuryWorld() {
   return (
@@ -29,18 +47,20 @@ export default function MercuryWorld() {
         opacity={1}
       />
 
-      {/* Real Mercury surface texture on curved terrain */}
-      <TextureGround
-        texturePath="/assets/planets/mercury/2k_mercury.jpg"
-        repeat={70}
-        displacement={1.1}
-        curvatureRadius={1200}
-        tintA="#f5f0e7"
-        tintB="#c9c4b8"
-        bumpScale={0.2}
-        carve={{ count: 40, minRadius: 10, maxRadius: 40, depth: 3.8, rim: 0.7 }}
-        boulders={BOULDERS}
+      {/* Heightmap-driven terrain — MESSENGER-derived elevation characteristics */}
+      <TerrainGround config={MERCURY_TERRAIN} />
+
+      {/* Procedural micro-detail: scattered rocks on terrain surface */}
+      <RockScatter
+        config={MERCURY_TERRAIN}
+        count={600}
+        minScale={0.08}
+        maxScale={0.6}
+        color="#8a827a"
       />
+
+      {/* Terrain crack lines — airless world fracturing */}
+      <TerrainCracks config={MERCURY_TERRAIN} count={12} />
     </>
   )
 }

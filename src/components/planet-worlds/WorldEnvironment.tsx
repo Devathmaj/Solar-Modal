@@ -78,19 +78,15 @@ interface TextureGroundProps {
   repeat?: number
   displacement?: number
   curvatureRadius?: number
-  tintA?: string
-  tintB?: string
   bumpScale?: number
   boulders?: BoulderSpec
   carve?: CraterFieldOptions
 }
 
 /**
- * Curved planetary terrain using an actual equirectangular planet texture
- * instead of a procedural canvas. The texture is sampled as a cylindrical
- * strip (equatorial band) for correct ground-level projection, combined
- * with the same vertex displacement, curvature, and boulder scatter as
- * the original RockyGround.
+ * Curved planetary terrain using a real seamless surface texture (not a planet
+ * map). The texture is tiled across the ground plane, combined with vertex
+ * displacement, curvature, and boulder scatter.
  */
 export function TextureGround({
   texturePath,
@@ -99,8 +95,6 @@ export function TextureGround({
   repeat = 34,
   displacement = 0.9,
   curvatureRadius,
-  tintA = '#ffffff',
-  tintB = '#9a9a9a',
   bumpScale = 0.035,
   boulders,
   carve,
@@ -126,11 +120,6 @@ export function TextureGround({
     planeGeometry.rotateX(-Math.PI / 2)
     const positionAttribute = planeGeometry.attributes.position as THREE.BufferAttribute
 
-    const colorA = new THREE.Color(tintA)
-    const colorB = new THREE.Color(tintB)
-    const colors = new Float32Array(positionAttribute.count * 3)
-    const vertexColor = new THREE.Color()
-
     for (let i = 0; i < positionAttribute.count; i++) {
       const x = positionAttribute.getX(i)
       const z = positionAttribute.getZ(i)
@@ -152,21 +141,16 @@ export function TextureGround({
       }
 
       positionAttribute.setY(i, height)
-
-      const drift =
-        0.5 + 0.5 * Math.sin(x * 0.021 + 1.3) * Math.cos(z * 0.017 + 4.1)
-      vertexColor.copy(colorA).lerp(colorB, drift)
-      colors[i * 3] = vertexColor.r
-      colors[i * 3 + 1] = vertexColor.g
-      colors[i * 3 + 2] = vertexColor.b
     }
 
     positionAttribute.needsUpdate = true
-    planeGeometry.setAttribute('color', new THREE.BufferAttribute(colors, 3))
     planeGeometry.computeVertexNormals()
 
     const surfaceMap = map.clone()
+    surfaceMap.wrapS = THREE.RepeatWrapping
+    surfaceMap.wrapT = THREE.RepeatWrapping
     surfaceMap.repeat.set(repeat, repeat)
+    surfaceMap.colorSpace = THREE.SRGBColorSpace
     surfaceMap.anisotropy = gl.capabilities.getMaxAnisotropy()
     surfaceMap.needsUpdate = true
 
@@ -176,12 +160,11 @@ export function TextureGround({
         map: surfaceMap,
         bumpMap: surfaceMap,
         bumpScale,
-        roughness: 1,
-        metalness: 0,
-        vertexColors: true,
+        roughness: 0.85,
+        metalness: 0.02,
       }),
     }
-  }, [map, size, segments, repeat, displacement, curvatureRadius, tintA, tintB, bumpScale, gl, craterFn])
+  }, [map, size, segments, repeat, displacement, curvatureRadius, bumpScale, gl, craterFn])
 
   useEffect(
     () => () => {
@@ -782,22 +765,28 @@ function Boulders({
   const { geometry, material, mesh } = useMemo(() => {
     // Low-seg sphere displaced per-vertex: smoother craggy silhouettes than a
     // faceted polyhedron, and fewer vertices (indexed grid).
-    const rockGeometry = new THREE.SphereGeometry(1, 10, 7)
+    const rockGeometry = new THREE.SphereGeometry(1, 14, 10)
     const positions = rockGeometry.attributes.position as THREE.BufferAttribute
     const grounding = new Float32Array(positions.count * 3)
     for (let i = 0; i < positions.count; i++) {
-      // Deterministic per-vertex jitter → irregular boulder forms.
-      const jitter = 0.74 + ((i * 2654435761) % 1000) / 1000 * 0.5
-      const y = positions.getY(i) * jitter * 0.72
+      const px = positions.getX(i)
+      const py = positions.getY(i)
+      const pz = positions.getZ(i)
+      const len = Math.sqrt(px * px + py * py + pz * pz) || 1
+      // Multi-octave deterministic jitter for craggy, non-uniform shapes
+      const j1 = 0.7 + ((i * 2654435761) % 1000) / 1000 * 0.6
+      const j2 = 0.85 + ((i * 1597463007) % 1000) / 1000 * 0.3
+      const jitter = j1 * j2
+      const flatten = 0.55 + ((i * 3266489917) % 1000) / 1000 * 0.35
       positions.setXYZ(
         i,
-        positions.getX(i) * jitter,
-        y,
-        positions.getZ(i) * jitter,
+        px * jitter,
+        py * jitter * flatten,
+        pz * jitter,
       )
-      // Baked grounding shade: darker toward the base, like contact shadow.
-      const t = THREE.MathUtils.clamp((y + 0.9) / 1.8, 0, 1)
-      const shade = 0.5 + 0.5 * t
+      const ny = positions.getY(i)
+      const t = THREE.MathUtils.clamp((ny + 0.9) / 1.8, 0, 1)
+      const shade = 0.35 + 0.65 * t
       grounding[i * 3] = shade
       grounding[i * 3 + 1] = shade
       grounding[i * 3 + 2] = shade
@@ -811,9 +800,9 @@ function Boulders({
     const rockMaterial = new THREE.MeshStandardMaterial({
       map: rockTexture,
       bumpMap: rockTexture,
-      bumpScale: 1.5,
-      roughness: 1,
-      metalness: 0,
+      bumpScale: 2.0,
+      roughness: 0.92,
+      metalness: 0.03,
       vertexColors: true,
     })
 

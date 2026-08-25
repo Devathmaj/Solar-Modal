@@ -1,16 +1,39 @@
+/**
+ * VenusWorld — volcanic terrain beneath dense sulfuric-acid clouds.
+ *
+ * Terrain data sources:
+ *  - Elevation: NASA Magellan radar altimetry / USGS Astrogeology
+ *    https://astrogeology.usgs.gov/
+ *  - Surface: Solar System Scope / Magellan SAR mosaic (CC BY 4.0)
+ *
+ * Visual characteristics:
+ *  - Rocky, volcanic terrain from Magellan radar-derived topography
+ *  - Volcanic plains, ridges, fractures, shield-volcano terrain
+ *  - Dense sulfuric-acid cloud atmosphere obscuring the surface
+ *  - Radar-derived surface appearance (NOT optical photography)
+ *
+ * The terrain is rendered below the cloud layer. As the camera descends
+ * through the atmosphere, the volcanic surface becomes visible through
+ * breaks in the cloud deck.
+ *
+ * See terrain/terrainMetadata.ts for full attribution records.
+ */
+
 import { CloudPuffs, GasWalls, ParticleField, TextureSkyDome } from './WorldEnvironment'
 import { mirrorStops } from './worldAssets'
 import { PLANET_ENHANCE } from '../solar-system/textures'
+import { TerrainGround, RockScatter, VENUS_TERRAIN } from './terrain'
 
 // Mirrored twin drives the seamless near-field cloud wall.
 const BAND_STOPS = mirrorStops(['#f6e2ae', '#e3bd7a', '#cf9a48', '#a8761f', '#7a5216', '#573a10'])
 
-
 /**
- * Venus: buried under a dense, rotating cloak of sulfuric-acid clouds. The
- * camera immerses in the planet's real atmosphere map, with super-rotating
- * cloud bands, hazy wisps, and a surface completely hidden below.
- * Uses real Venus surface texture for the sky dome background.
+ * Venus: buried under a dense, rotating cloak of sulfuric-acid clouds.
+ * Below the cloud deck lies volcanic terrain derived from Magellan radar
+ * altimetry — ridges, fractures, and shield volcanoes.
+ *
+ * The cloud layer is the immersive "sky" environment, while the terrain
+ * system provides actual 3D volcanic surface geometry below.
  */
 export default function VenusWorld() {
   const enhance = PLANET_ENHANCE.venus
@@ -44,11 +67,19 @@ export default function VenusWorld() {
       {/* Sulfuric-acid haze motes */}
       <ParticleField count={600} color="#eed9a8" size={0.38} opacity={0.38} spread={[70, 36, 70]} spinSpeed={0.02} />
 
-      {/* Faint dark disc far below - the hidden surface */}
-      <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -25, 0]}>
-        <circleGeometry args={[140, 56]} />
-        <meshBasicMaterial color="#5e4517" transparent opacity={0.28} depthWrite={false} />
-      </mesh>
+      {/* Volcanic terrain below the cloud layer — Magellan radar-derived topography.
+          The terrain sits below the camera's typical cloud-layer position, becoming
+          visible when the camera descends through breaks in the cloud deck. */}
+      <group position={[0, -30, 0]}>
+        <TerrainGround config={VENUS_TERRAIN} />
+        <RockScatter
+          config={VENUS_TERRAIN}
+          count={200}
+          minScale={0.1}
+          maxScale={0.8}
+          color="#a88040"
+        />
+      </group>
     </>
   )
 }

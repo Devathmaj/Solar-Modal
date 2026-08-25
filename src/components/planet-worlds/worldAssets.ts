@@ -127,18 +127,19 @@ export function createRockSurfaceTexture(resolution = 256) {
   const W = resolution
   const H = resolution
 
-  context.fillStyle = '#9c9c9c'
+  context.fillStyle = '#7a7a7a'
   context.fillRect(0, 0, W, H)
 
-  for (let i = 0; i < 26; i++) {
+  // Large-scale colour patches
+  for (let i = 0; i < 40; i++) {
     const x = Math.random() * W
     const y = Math.random() * H
-    const r = 8 + Math.random() * 30
-    const tone = Math.random() > 0.5 ? 255 : 40
+    const r = 15 + Math.random() * 50
+    const tone = 80 + Math.random() * 140
     for (const offsetX of [-W, 0, W]) {
       for (const offsetY of [-H, 0, H]) {
         const g = context.createRadialGradient(x + offsetX, y + offsetY, r * 0.1, x + offsetX, y + offsetY, r)
-        g.addColorStop(0, `rgba(${tone},${tone},${tone},${0.08 + Math.random() * 0.12})`)
+        g.addColorStop(0, `rgba(${tone},${tone - 8},${tone - 15},${0.15 + Math.random() * 0.2})`)
         g.addColorStop(1, `rgba(${tone},${tone},${tone},0)`)
         context.fillStyle = g
         context.beginPath()
@@ -148,13 +149,29 @@ export function createRockSurfaceTexture(resolution = 256) {
     }
   }
 
-  for (let i = 0; i < 900; i++) {
-    const size = 0.7 + Math.random() * 1.8
-    const light = Math.random() > 0.5
-    context.fillStyle = light
-      ? `rgba(255,255,255,${0.05 + Math.random() * 0.12})`
-      : `rgba(0,0,0,${0.06 + Math.random() * 0.14})`
+  // Fine grain noise
+  for (let i = 0; i < 1800; i++) {
+    const size = 0.5 + Math.random() * 2.2
+    const light = Math.random() > 0.45
+    const base = light ? 180 + Math.random() * 75 : 30 + Math.random() * 60
+    context.fillStyle = `rgba(${base},${base - 5},${base - 10},${0.08 + Math.random() * 0.18})`
     context.fillRect(Math.random() * W, Math.random() * H, size, size)
+  }
+
+  // Cracks / veins
+  context.strokeStyle = 'rgba(40,35,30,0.12)'
+  context.lineWidth = 0.8
+  for (let i = 0; i < 8; i++) {
+    context.beginPath()
+    let cx = Math.random() * W
+    let cy = Math.random() * H
+    context.moveTo(cx, cy)
+    for (let j = 0; j < 12; j++) {
+      cx += (Math.random() - 0.5) * 30
+      cy += (Math.random() - 0.5) * 30
+      context.lineTo(cx, cy)
+    }
+    context.stroke()
   }
 
   const texture = new THREE.CanvasTexture(canvas)

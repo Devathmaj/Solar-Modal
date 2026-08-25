@@ -14,6 +14,7 @@ import {
 import { paintOverlay, overlayOpacity } from './overlay'
 import { getCollider } from '../solar-system/colliders'
 import { applyExternalCamera } from '../solar-system/externalCamera'
+import { getTerrainConfig } from './terrain'
 
 const UP = new THREE.Vector3(0, 1, 0)
 
@@ -57,6 +58,9 @@ interface TransitionState {
   savedQuat: THREE.Quaternion
   departurePos: THREE.Vector3
   departureQuat: THREE.Quaternion
+  /** Terrain descent: camera starts elevated during reveal, descends to anchor. */
+  revealStartPos: THREE.Vector3
+  revealEndPos: THREE.Vector3
 }
 
 /**
@@ -101,6 +105,8 @@ export function WorldTransition() {
     savedQuat: new THREE.Quaternion(),
     departurePos: new THREE.Vector3(),
     departureQuat: new THREE.Quaternion(),
+    revealStartPos: new THREE.Vector3(),
+    revealEndPos: new THREE.Vector3(),
   })
 
   const lookAtPoint = (eye: THREE.Vector3, target: THREE.Vector3) => {
@@ -120,6 +126,17 @@ export function WorldTransition() {
         if (active && overlayOpacity() > 0.01) {
           s.bodyId = active
           s.fadeColor = WORLDS[active].fadeColor
+          // Set up terrain descent for deep links
+          const worldMeta = WORLDS[active]
+          const terrainConfig = getTerrainConfig(active)
+          const anchor = new THREE.Vector3(...worldMeta.camera.anchor)
+          const elevatedOffset = terrainConfig
+            ? worldMeta.camera.maxDistance * 0.6
+            : worldMeta.camera.distance * 0.3
+          s.revealStartPos.copy(anchor).add(new THREE.Vector3(0, elevatedOffset, elevatedOffset * 0.4))
+          s.revealEndPos.copy(anchor)
+          camera.position.copy(s.revealStartPos)
+          camera.lookAt(s.revealEndPos)
           s.t = 0
           s.mode = 'reveal'
           return
@@ -203,6 +220,21 @@ export function WorldTransition() {
 
         if (s.t >= 1) {
           completeEnterCover()
+          // Set up terrain descent: camera starts elevated above the anchor,
+          // descends to the anchor position during the reveal phase.
+          // This creates the visual effect of descending onto the terrain.
+          if (s.bodyId) {
+            const worldMeta = WORLDS[s.bodyId]
+            const terrainConfig = getTerrainConfig(s.bodyId)
+            const anchor = new THREE.Vector3(...worldMeta.camera.anchor)
+            const elevatedOffset = terrainConfig
+              ? worldMeta.camera.maxDistance * 0.6
+              : worldMeta.camera.distance * 0.3
+            s.revealStartPos.copy(anchor).add(new THREE.Vector3(0, elevatedOffset, elevatedOffset * 0.4))
+            s.revealEndPos.copy(anchor)
+            camera.position.copy(s.revealStartPos)
+            camera.lookAt(s.revealEndPos)
+          }
           s.mode = 'reveal'
           s.t = 0
         }
@@ -213,7 +245,16 @@ export function WorldTransition() {
       case 'reveal': {
         s.t += delta / REVEAL_DURATION
         const k = Math.min(s.t, 1)
-        paintOverlay(s.fadeColor, 1 - easeInOutCubic(k))
+        const revealEased = easeInOutCubic(k)
+
+        // Terrain descent: camera descends from elevated position to anchor
+        // while the overlay fades, creating the "approaching terrain" feel.
+        camera.position.lerpVectors(s.revealStartPos, s.revealEndPos, revealEased)
+        const lookTarget = s.revealEndPos.clone()
+        lookTarget.y += 0.5
+        camera.lookAt(lookTarget)
+
+        paintOverlay(s.fadeColor, 1 - revealEased)
         if (s.t >= 1) {
           paintOverlay(s.fadeColor, 0)
           s.mode = 'idle'

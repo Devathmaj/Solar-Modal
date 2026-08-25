@@ -11,6 +11,7 @@ import { PlanetWorldRouter } from './components/planet-worlds/PlanetWorldRouter'
 import { WorldHUD } from './components/planet-worlds/WorldHUD'
 import { BodyProximityTrigger } from './components/planet-worlds/BodyProximityTrigger'
 import { BodyHoverLabel } from './components/planet-worlds/BodyHoverLabel'
+import { FocusPanel } from './components/planet-worlds/content/FocusPanel'
 
 export default function App() {
   useEffect(() => {
@@ -48,6 +49,7 @@ export default function App() {
       />
 
       <WorldHUD />
+      <FocusPanel />
       <VirtualPad />
     </>
   )

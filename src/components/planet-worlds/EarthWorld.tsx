@@ -1,17 +1,11 @@
-import { CloudPuffs, DistantSunSprite, ParticleField, RockyGround, SkyDome, type SurfaceStyle } from './WorldEnvironment'
+import { CloudPuffs, DistantSunSprite, ParticleField, TextureGround, SkyDome } from './WorldEnvironment'
 
-const SURFACE: SurfaceStyle = {
-  palette: ['#5d7a4a', '#77935c', '#8a9a5e', '#a89a6a', '#5f7d68'],
-  blotches: 120,
-  speckles: 2200,
-  streaks: 24,
-}
-
-const BOULDERS = { count: 230, minScale: 0.05, maxScale: 0.3, color: '#8a8a76' }
+const BOULDERS = { count: 500, minScale: 0.05, maxScale: 0.45, color: '#8a8a76' }
 
 /**
  * Earth: the richest world — blue scattering overhead, drifting cumulus,
- * rolling green terrain curving away below, clean sunlight. Home.
+ * rolling green terrain curving away below, and clean sunlight. Home.
+ * Uses real Earth surface texture mapped on curved terrain.
  */
 export default function EarthWorld() {
   return (
@@ -22,7 +16,7 @@ export default function EarthWorld() {
       <directionalLight intensity={0.4} color="#9ecbff" position={[-32, -10, 24]} />
       <hemisphereLight args={['#9ecbff', '#6a8f5a', 0.6]} />
 
-      {/* Bottom matches fog — horizon haze, no hard cutoff */}
+      {/* Blue atmospheric sky gradient */}
       <SkyDome top="#2e6fd0" mid="#7fb4ea" bottom="#b7d4ee" />
 
       <DistantSunSprite
@@ -33,26 +27,27 @@ export default function EarthWorld() {
         opacity={0.95}
       />
 
-      {/* Cumulus decks */}
-      <CloudPuffs count={16} color="#ffffff" radius={46} height={10} band={5} minScale={16} maxScale={38} opacity={0.2} speed={0.008} />
-      <CloudPuffs count={9} color="#f2f6ff" radius={60} height={19} band={4} minScale={26} maxScale={50} opacity={0.13} speed={-0.005} />
+      {/* Rich cumulus decks with varying heights */}
+      <CloudPuffs count={25} color="#ffffff" radius={52} height={12} band={6} minScale={20} maxScale={42} opacity={0.25} speed={0.009} />
+      <CloudPuffs count={18} color="#f2f6ff" radius={68} height={22} band={8} minScale={30} maxScale={55} opacity={0.16} speed={-0.006} />
 
-      <RockyGround
-        style={SURFACE}
-        repeat={46}
-        displacement={0.75}
-        curvatureRadius={1700}
+      {/* Real Earth surface texture on curved terrain */}
+      <TextureGround
+        texturePath="/assets/planets/earth/2k_earth_daymap.jpg"
+        repeat={60}
+        displacement={0.9}
+        curvatureRadius={1850}
         tintA="#dcead2"
         tintB="#71875e"
-        bumpScale={0.05}
+        bumpScale={0.08}
         boulders={BOULDERS}
       />
 
       {/* Distant cumulus bank hugging the horizon */}
-      <CloudPuffs count={8} color="#f4f8ff" radius={105} height={5} band={3} minScale={55} maxScale={100} opacity={0.15} speed={0.003} />
+      <CloudPuffs count={12} color="#f4f8ff" radius={120} height={6} band={4} minScale={70} maxScale={130} opacity={0.2} speed={0.004} />
 
       {/* Faint near-ground sparkle: pollen / moisture in the air */}
-      <ParticleField count={220} color="#ffffff" size={0.16} opacity={0.22} spread={[40, 14, 40]} spinSpeed={0.01} />
+      <ParticleField count={300} color="#ffffff" size={0.2} opacity={0.28} spread={[45, 16, 45]} spinSpeed={0.01} />
     </>
   )
 }

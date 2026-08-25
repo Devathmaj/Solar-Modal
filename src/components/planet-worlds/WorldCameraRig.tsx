@@ -3,23 +3,43 @@ import { useFrame, useThree } from '@react-three/fiber'
 import * as THREE from 'three'
 import type { WorldCameraConfig } from '../../config/planetWorlds'
 import { getWorldSnapshot } from './worldState'
+import { getFocusSnapshot } from './content/contentFocus'
+import { itemPosition } from './content/layout'
 
 const LOOK_SENSITIVITY = 0.005
 const PITCH_SENSITIVITY = 0.0026
 const ZOOM_SENSITIVITY = 0.0016
 const ROTATION_DAMPING = 7
 const MOVEMENT_DAMPING = 8
+/** How quickly the orbit centre glides to a focused item (and back). */
+const FOCUS_ANCHOR_DAMPING = 3.5
 
 /**
  * Planet worlds get their own restrained camera: an orbit around the world's
  * content anchor with clamped pitch and distance. It invites exploration but
  * can never wander out of the environment.
+ *
+ * When a content item is focused (see contentFocus), the orbit centre itself
+ * glides to that item and the radius eases to a framing distance — the same
+ * damped rig produces the "camera flies to the artefact" feel with zero new
+ * controls. Wheel/pinch zoom is ignored while focused so the framing holds;
+ * look-around stays available.
  */
-export function WorldCameraRig({ config }: { config: WorldCameraConfig }) {
+export function WorldCameraRig({
+  config,
+  bodyId,
+}: {
+  config: WorldCameraConfig
+  bodyId: string
+}) {
   const camera = useThree((state) => state.camera)
   const gl = useThree((state) => state.gl)
 
   const anchor = useMemo(() => new THREE.Vector3(...config.anchor), [config])
+  /** Live orbit centre — glides between the default anchor and focused items. */
+  const anchorCurrent = useRef(new THREE.Vector3(...config.anchor))
+  const wasFocusing = useRef(false)
+
   const initialPitch = THREE.MathUtils.clamp(
     config.initialPitch ?? 0.12,
     config.minPitch,
@@ -53,19 +73,15 @@ export function WorldCameraRig({ config }: { config: WorldCameraConfig }) {
     ).multiplyScalar(orientationState.radius)
     camera.position.copy(anchor).add(offset)
     camera.lookAt(anchor)
+    anchorCurrent.current.copy(anchor)
 
     domElement.style.cursor = 'grab'
 
-    const clampOrientation = () => {
+    const clampPitch = () => {
       orientationState.targetPitch = THREE.MathUtils.clamp(
         orientationState.targetPitch,
         config.minPitch,
         config.maxPitch,
-      )
-      orientationState.targetRadius = THREE.MathUtils.clamp(
-        orientationState.targetRadius,
-        config.minDistance,
-        config.maxDistance,
       )
     }
 
@@ -89,9 +105,17 @@ export function WorldCameraRig({ config }: { config: WorldCameraConfig }) {
       if (gestureState.traces.size >= 2) {
         const points = [...gestureState.traces.values()]
         const span = Math.hypot(points[0].x - points[1].x, points[0].y - points[1].y)
-        if (gestureState.pinchSpan > 0 && span > 0) {
+        if (
+          gestureState.pinchSpan > 0 &&
+          span > 0 &&
+          !getFocusSnapshot().itemId // zoom locked while framing an item
+        ) {
           orientationState.targetRadius *= gestureState.pinchSpan / span
-          clampOrientation()
+          orientationState.targetRadius = THREE.MathUtils.clamp(
+            orientationState.targetRadius,
+            config.minDistance,
+            config.maxDistance,
+          )
         }
         gestureState.pinchSpan = span
         return
@@ -99,7 +123,7 @@ export function WorldCameraRig({ config }: { config: WorldCameraConfig }) {
 
       orientationState.targetYaw -= deltaX * LOOK_SENSITIVITY
       orientationState.targetPitch += deltaY * PITCH_SENSITIVITY
-      clampOrientation()
+      clampPitch()
     }
 
     const endPointer = (event: PointerEvent) => {
@@ -113,10 +137,18 @@ export function WorldCameraRig({ config }: { config: WorldCameraConfig }) {
 
     const handleWheel = (event: WheelEvent) => {
       if (getWorldSnapshot().phase !== 'inside') return
+      if (getFocusSnapshot().itemId) {
+        event.preventDefault()
+        return // framing an item — zoom is held so the composition keeps
+      }
       event.preventDefault()
       const deltaY = event.deltaMode === 1 ? event.deltaY * 32 : event.deltaY
       orientationState.targetRadius *= Math.exp(deltaY * ZOOM_SENSITIVITY)
-      clampOrientation()
+      orientationState.targetRadius = THREE.MathUtils.clamp(
+        orientationState.targetRadius,
+        config.minDistance,
+        config.maxDistance,
+      )
     }
 
     domElement.addEventListener('pointerdown', handlePointerDown)
@@ -137,10 +169,36 @@ export function WorldCameraRig({ config }: { config: WorldCameraConfig }) {
   const framePosition = useRef(new THREE.Vector3())
   const frameOffset = useRef(new THREE.Vector3())
   const frameLookTarget = useRef(new THREE.Vector3())
+  const anchorDesired = useRef(new THREE.Vector3())
 
   useFrame((state, delta) => {
     if (getWorldSnapshot().phase !== 'inside') return
     const o = orientation.current
+
+    // ── Focus handling ────────────────────────────────────────────────
+    const focus = getFocusSnapshot()
+    const focusing = focus.worldId === bodyId && Boolean(focus.itemId)
+
+    let desiredAnchorX = anchor.x
+    let desiredAnchorY = anchor.y
+    let desiredAnchorZ = anchor.z
+
+    if (focusing && focus.itemId) {
+      const itemPos = itemPosition(bodyId, focus.itemId)
+      if (itemPos) {
+        ;[desiredAnchorX, desiredAnchorY, desiredAnchorZ] = itemPos
+        o.targetRadius = Math.max(2.6, config.minDistance * 0.82)
+      }
+    } else if (wasFocusing.current) {
+      // Just unfocused — ease back out to the overview distance.
+      o.targetRadius = config.distance
+    }
+    wasFocusing.current = focusing
+
+    anchorCurrent.current.lerp(
+      anchorDesired.current.set(desiredAnchorX, desiredAnchorY, desiredAnchorZ),
+      1 - Math.exp(-FOCUS_ANCHOR_DAMPING * delta),
+    )
 
     o.yaw = THREE.MathUtils.damp(o.yaw, o.targetYaw, ROTATION_DAMPING, delta)
     o.pitch = THREE.MathUtils.damp(o.pitch, o.targetPitch, ROTATION_DAMPING, delta)
@@ -150,17 +208,19 @@ export function WorldCameraRig({ config }: { config: WorldCameraConfig }) {
     const drift = config.drift ?? 0
     const bob = Math.sin(state.clock.elapsedTime * 0.45) * drift
 
-    frameOffset.current.set(
-      Math.sin(o.yaw) * Math.cos(o.pitch),
-      Math.sin(o.pitch),
-      Math.cos(o.yaw) * Math.cos(o.pitch),
-    ).multiplyScalar(o.radius)
+    frameOffset.current
+      .set(
+        Math.sin(o.yaw) * Math.cos(o.pitch),
+        Math.sin(o.pitch),
+        Math.cos(o.yaw) * Math.cos(o.pitch),
+      )
+      .multiplyScalar(o.radius)
 
-    framePosition.current.copy(anchor).add(frameOffset.current)
+    framePosition.current.copy(anchorCurrent.current).add(frameOffset.current)
     framePosition.current.y += bob
     camera.position.copy(framePosition.current)
 
-    frameLookTarget.current.copy(anchor)
+    frameLookTarget.current.copy(anchorCurrent.current)
     frameLookTarget.current.y += bob * 0.55
     camera.lookAt(frameLookTarget.current)
   })

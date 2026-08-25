@@ -61,6 +61,7 @@ export function bodyIdForPlanetName(name: string): BodyId | null {
  * …) — shared by hover/proximity systems and the transition controller.
  */
 export function colliderIdForBody(bodyId: BodyId | ''): string {
+  if (!bodyId) return ''
   return bodyId === 'sun' ? 'sun' : `planet-${bodyId[0].toUpperCase()}${bodyId.slice(1)}`
 }
 

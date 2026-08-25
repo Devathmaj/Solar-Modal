@@ -2,7 +2,6 @@ import { useEffect, useMemo, useRef, type ReactNode } from 'react'
 import { useFrame, useThree } from '@react-three/fiber'
 import { useTexture } from '@react-three/drei'
 import * as THREE from 'three'
-import type { PlanetConfig } from './config'
 import { registerCollider, syncColliderWithObject, unregisterCollider } from './colliders'
 import { bodyIdForPlanetName } from '../../config/planetWorlds'
 import { isInputLocked, requestEnter } from '../planet-worlds/worldState'
@@ -14,11 +13,6 @@ import {
 } from '../planet-worlds/bodyHover'
 
 const SPHERE_SEGMENTS = 64
-const ORBIT_LINE_SEGMENTS = 256
-
-interface PlanetProps extends PlanetConfig {
-  children?: ReactNode
-}
 
 const ORBIT_VERTEX = /* glsl */ `
   varying float vAngle;
@@ -28,11 +22,6 @@ const ORBIT_VERTEX = /* glsl */ `
   }
 `
 
-/**
- * Orbit line that opens a gap around the planet's live angular position —
- * the ring pierces the body's centre, and without the gap its near arc
- * slashes across the planet disc from every viewing angle.
- */
 const ORBIT_FRAGMENT = /* glsl */ `
   uniform vec3 uColor;
   uniform float uOpacity;
@@ -55,6 +44,8 @@ function OrbitPath({
   bodyRadius: number
   getAngle: () => number
 }) {
+  const ORBIT_LINE_SEGMENTS = 256
+
   const geometry = useMemo(() => {
     const positions = new Float32Array(ORBIT_LINE_SEGMENTS * 3)
     for (let i = 0; i < ORBIT_LINE_SEGMENTS; i++) {
@@ -73,8 +64,9 @@ function OrbitPath({
       uColor: { value: new THREE.Color('#7d8fa8') },
       uOpacity: { value: 0.22 },
       uPlanetAngle: { value: 0 },
-      // Angular half-width of the gap, sized from the body's own radius.
-      uGap: { value: Math.asin(Math.min(0.95, (bodyRadius * 1.7) / radius)) + 0.02 },
+      uGap: {
+        value: Math.asin(Math.min(0.95, (bodyRadius * 1.7) / radius)) + 0.02,
+      },
     }),
     [bodyRadius, radius],
   )
@@ -122,12 +114,12 @@ export function Planet({
   axialTilt = 0,
   initialAngle = 0,
   children,
-}: PlanetProps) {
+}: { name: string; texture: string; radius: number; orbitRadius: number; revolutionSpeed: number; rotationSpeed: number; axialTilt?: number; initialAngle?: number; children?: ReactNode }) {
   const map = useHighQualityTexture(texture)
   const gl = useThree((state) => state.gl)
-  const orbitRef = useRef<THREE.Group>(null!)
-  const anchorRef = useRef<THREE.Group>(null!)
-  const spinnerRef = useRef<THREE.Mesh>(null!)
+  const orbitRef = useRef(null!)
+  const anchorRef = useRef(null!)
+  const spinnerRef = useRef(null!)
 
   const startAngle = THREE.MathUtils.degToRad(initialAngle)
   const tiltAngle = THREE.MathUtils.degToRad(axialTilt)
@@ -138,7 +130,6 @@ export function Planet({
     return () => unregisterCollider(`planet-${name}`)
   }, [name, radius])
 
-  // Very subtle integrated highlight — no artificial outlines or labels.
   const setHighlight = (enabled: boolean) => {
     const material = spinnerRef.current?.material as THREE.MeshStandardMaterial | undefined
     if (!material) return
@@ -168,8 +159,6 @@ export function Planet({
       <group ref={orbitRef}>
         <group ref={anchorRef} position={[orbitRadius, 0, 0]}>
           <group rotation={[0, 0, tiltAngle]}>
-            {/* Interior shell: if the camera ever ends up inside the sphere
-                it sees a dark wall instead of hollow backfaces */}
             <mesh>
               <sphereGeometry args={[radius * 0.96, 32, 24]} />
               <meshBasicMaterial color="#06070b" side={THREE.BackSide} />
@@ -203,7 +192,11 @@ export function Planet({
               }}
             >
               <sphereGeometry args={[radius, SPHERE_SEGMENTS, SPHERE_SEGMENTS]} />
-              <meshStandardMaterial map={map} roughness={1} metalness={0} />
+              <meshStandardMaterial
+                map={map}
+                roughness={1}
+                metalness={0}
+              />
             </mesh>
             {children}
           </group>

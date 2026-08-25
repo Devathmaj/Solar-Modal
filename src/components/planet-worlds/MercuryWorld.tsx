@@ -1,33 +1,25 @@
-import { DistantSunSprite, RockyGround, SkyDome, StarPoints, type SurfaceStyle } from './WorldEnvironment'
+import { DistantSunSprite, TextureGround, TextureSkyDome, StarPoints } from './WorldEnvironment'
 
-const SURFACE: SurfaceStyle = {
-  palette: ['#8f8880', '#7a736c', '#a39a90', '#6b645e'],
-  craters: 240,
-  craterSize: [2.5, 15],
-  blotches: 80,
-  speckles: 2600,
-}
-
-const BOULDERS = { count: 360, minScale: 0.06, maxScale: 0.42, color: '#8a827a' }
+const BOULDERS = { count: 600, minScale: 0.08, maxScale: 0.6, color: '#8a827a' }
 
 /**
- * Mercury: airless, cratered, brutally lit. Black sky full of stars, one
- * harsh white sun, and silence.
+ * Mercury: airless, heavily cratered world with extreme temperature differences.
+ * No atmosphere means the sky is black, the sun is harsh, and every feature
+ * is sharply defined by high-contrast lighting with sharp shadow definition.
+ * Uses real Mercury surface texture mapped on curved terrain.
  */
 export default function MercuryWorld() {
   return (
     <>
-      {/* Harsh key light, but with a faint spaceglow fill so the night side
-          reads as dim rather than a razor-cut black half */}
-      <ambientLight intensity={0.15} />
-      <directionalLight intensity={2.9} color="#fff8ec" position={[34, 22, -26]} />
-      <directionalLight intensity={0.32} color="#8fa3c8" position={[-40, -10, 30]} />
-      <hemisphereLight args={['#3d465c', '#16130f', 0.4]} />
+      {/* Harsh key light creating extreme contrast - no atmospheric fill */}
+      <ambientLight intensity={0.1} />
+      <directionalLight intensity={3.2} color="#fffaf0" position={[40, 30, -30]} />
+      <directionalLight intensity={0.4} color="#7a8c7e" position={[-45, -15, 35]} />
+      <hemisphereLight args={['#1a1a1a', '#0d0d0d', 0.3]} />
 
-      {/* Near-black sky so the stars read as airless-space stars; bottom
-          matches fog so the terrain fades seamlessly */}
-      <SkyDome top="#010204" mid="#040404" bottom="#0d0c0b" />
-      <StarPoints count={1100} size={1.7} opacity={0.95} />
+      {/* Starfield sky - real star texture on a sphere */}
+      <TextureSkyDome texturePath="/assets/background/stars_only_2k.jpg" />
+      <StarPoints count={1500} size={2.0} opacity={0.98} />
 
       <DistantSunSprite
         direction={[0.62, 0.4, -0.52]}
@@ -37,15 +29,16 @@ export default function MercuryWorld() {
         opacity={1}
       />
 
-      <RockyGround
-        style={SURFACE}
-        repeat={52}
-        displacement={0.85}
-        curvatureRadius={1050}
-        tintA="#ffffff"
-        tintB="#8d867e"
-        bumpScale={0.11}
-        carve={{ count: 26, minRadius: 6, maxRadius: 26, depth: 2.4, rim: 0.55 }}
+      {/* Real Mercury surface texture on curved terrain */}
+      <TextureGround
+        texturePath="/assets/planets/mercury/2k_mercury.jpg"
+        repeat={70}
+        displacement={1.1}
+        curvatureRadius={1200}
+        tintA="#f5f0e7"
+        tintB="#c9c4b8"
+        bumpScale={0.2}
+        carve={{ count: 40, minRadius: 10, maxRadius: 40, depth: 3.8, rim: 0.7 }}
         boulders={BOULDERS}
       />
     </>

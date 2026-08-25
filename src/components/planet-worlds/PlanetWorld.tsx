@@ -1,12 +1,14 @@
 import { useEffect, type ReactNode } from 'react'
 import { useThree } from '@react-three/fiber'
 import * as THREE from 'three'
-import type { WorldMeta } from '../../config/planetWorlds'
+import type { BodyId, WorldMeta } from '../../config/planetWorlds'
 import { WorldCameraRig } from './WorldCameraRig'
-import { PortfolioContent } from './PortfolioContent'
+import { ContentLayer } from './content/ContentLayer'
+import { closeFocus } from './content/contentFocus'
 
 interface PlanetWorldProps {
   meta: WorldMeta
+  bodyId: BodyId
   children: ReactNode
 }
 
@@ -14,12 +16,12 @@ interface PlanetWorldProps {
  * Reusable shell every celestial-body world is built from:
  *
  *   WorldEnvironment → per-world `children` (sky, fog palette, terrain…)
- *   WorldCamera      → clamped orbital rig (WorldCameraRig)
+ *   WorldCamera      → clamped orbital rig with item-focus gliding
  *   WorldLighting    → provided by each world (atmosphere-specific)
- *   WorldContent     → PortfolioContent anchored inside the world
+ *   WorldContent     → ContentLayer (overview card + ambient items)
  *   ExitTransition   → handled globally by WorldTransition + HUD
  */
-export function PlanetWorld({ meta, children }: PlanetWorldProps) {
+export function PlanetWorld({ meta, bodyId, children }: PlanetWorldProps) {
   const scene = useThree((state) => state.scene)
 
   useEffect(() => {
@@ -30,14 +32,16 @@ export function PlanetWorld({ meta, children }: PlanetWorldProps) {
     }
     return () => {
       if (scene.fog === fog) scene.fog = null
+      // Never leak a focused item across worlds.
+      closeFocus()
     }
   }, [scene, meta])
 
   return (
     <>
-      <WorldCameraRig config={meta.camera} />
+      <WorldCameraRig config={meta.camera} bodyId={bodyId} />
       {children}
-      <PortfolioContent meta={meta} />
+      <ContentLayer bodyId={bodyId} meta={meta} />
     </>
   )
 }

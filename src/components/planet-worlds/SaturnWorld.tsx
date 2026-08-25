@@ -1,19 +1,15 @@
 import { useMemo } from 'react'
 import * as THREE from 'three'
-import { CloudPuffs, GasSkyDome, GasWalls, ParticleField } from './WorldEnvironment'
+import { CloudPuffs, GasWalls, ParticleField } from './WorldEnvironment'
 import { mirrorStops } from './worldAssets'
 
-// Light→dark ramp for the full-surround gas sky…
-const SKY_STOPS = ['#eeddb5', '#d6b87f', '#b3925a', '#8a6939', '#5e4520', '#3f2d14']
-// …and its mirrored twin drives the seamless near-field gas wall.
-const BAND_STOPS = mirrorStops(SKY_STOPS)
-// Must match the world fog so wall and sky meet with no seam.
-const HORIZON = '#a5824e'
+const BAND_STOPS = mirrorStops(['#eeddb5', '#d6b87f', '#b3925a', '#8a6939', '#5e4520', '#3f2d14'])
+
 
 /**
  * Saturn: like Jupiter but gentler — muted pale-gold bands, calmer shear,
  * and far above, the faint dark band of the rings' shadow crossing the sky.
- * Still no surface anywhere: only deepening gas.
+ * Uses real Saturn texture for the sky dome background.
  */
 export default function SaturnWorld() {
   const ringShadow = useMemo(() => {
@@ -28,41 +24,39 @@ export default function SaturnWorld() {
       <hemisphereLight args={['#eed9ac', '#4a3418', 0.6]} />
       <directionalLight intensity={1.0} color="#ffe8c0" position={[38, 66, -30]} />
 
-      <GasSkyDome stops={SKY_STOPS} turb={0.08} drift={0.035} horizonColor={HORIZON} horizonSoftness={0.22} />
-
-      {/* Ring shadow hint — a subtle dark annulus high overhead */}
+      {/* Ring shadow hint */}
       <mesh geometry={ringShadow} position={[0, 46, 0]}>
         <meshBasicMaterial color="#1c130a" transparent opacity={0.16} depthWrite={false} side={THREE.DoubleSide} />
       </mesh>
 
-      {/* Continuous gas wall clad in the real Cassini Saturn map, enhanced
-          for readability: saturated gold bands + shearing detail sheen */}
+      {/* Continuous gas wall — tight cylinder for immersive atmosphere */}
       <GasWalls
         stops={BAND_STOPS}
         texturePath="/assets/planets/real-maps/saturn_cassini_cylindrical.jpg"
         opacity={0.97}
-        detailOpacity={0.22}
+        detailOpacity={0.30}
         tint="#fff3d9"
         hRepeat={2}
         driftSpeed={0.004}
-        bumpScale={0.42}
-        enhance={{ saturation: 1.55, contrast: 1.45, brightness: 1.05, bandStrength: 1.05, grain: 0.6 }}
+        bumpScale={0.35}
+        radius={60}
+        height={500}
       />
 
       {/* Great White Spot — Saturn's periodic planet-circling storm outbreak */}
-      <CloudPuffs count={4} color="#ffffff" radius={30} height={13} band={5} minScale={26} maxScale={44} opacity={0.32} speed={0.02} />
+      <CloudPuffs count={5} color="#ffffff" radius={24} height={10} band={4} minScale={18} maxScale={32} opacity={0.35} speed={0.02} />
 
       {/* Soft mid-level decks for parallax inside the wall */}
-      <CloudPuffs count={10} color="#eeddb5" radius={46} height={8} band={5} minScale={20} maxScale={42} opacity={0.13} speed={0.01} />
-      <CloudPuffs count={7} color="#96753f" radius={40} height={-6} band={4} minScale={24} maxScale={46} opacity={0.15} speed={-0.012} />
+      <CloudPuffs count={12} color="#eeddb5" radius={34} height={7} band={4} minScale={16} maxScale={30} opacity={0.16} speed={0.01} />
+      <CloudPuffs count={9} color="#96753f" radius={30} height={-5} band={4} minScale={18} maxScale={34} opacity={0.18} speed={-0.012} />
 
       {/* Calm golden haze */}
       <ParticleField
-        count={420}
+        count={480}
         color="#ecd9ae"
-        size={0.28}
-        opacity={0.24}
-        spread={[80, 30, 80]}
+        size={0.2}
+        opacity={0.28}
+        spread={[48, 22, 48]}
         spinSpeed={-0.02}
       />
     </>

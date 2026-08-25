@@ -1,16 +1,10 @@
-import { CloudPuffs, GasSkyDome, GasWalls, ParticleField } from './WorldEnvironment'
-import { mirrorStops } from './worldAssets'
+import { CloudPuffs, ParticleField, TextureSkyDome } from './WorldEnvironment'
 
-// Light→dark ramp for the full-surround gas sky…
-const SKY_STOPS = ['#eaf7f6', '#c6e8e5', '#9ad4d2', '#6cb4b6', '#489095', '#2c656c']
-// …and its mirrored twin drives the seamless near-field gas wall.
-const BAND_STOPS = mirrorStops(SKY_STOPS)
-// Must match the world fog so wall and sky meet with no seam.
-const HORIZON = '#83c4c4'
 
 /**
- * Uranus: an almost featureless teal-cyan calm. Feature-poor on purpose —
- * the serenity *is* the identity of this world.
+ * Uranus: an almost featureless teal-calm. Feature-poor on purpose —
+ * the serenity *is* the identity of this world. Uses the Solar System Scope
+ * equirectangular Uranus map on a sky dome (no stitched cylindrical composite).
  */
 export default function UranusWorld() {
   return (
@@ -19,37 +13,24 @@ export default function UranusWorld() {
       <hemisphereLight args={['#dff4f4', '#2e5a62', 0.6]} />
       <directionalLight intensity={0.9} color="#e8fbf9" position={[36, 62, -30]} />
 
-      <GasSkyDome stops={SKY_STOPS} turb={0.05} drift={0.02} horizonColor={HORIZON} horizonSoftness={0.2} />
+      {/* Real Uranus equirectangular map as the sky dome — seamless, no composite seam */}
+      <TextureSkyDome texturePath="/assets/planets/uranus/2k_uranus.jpg" tint="#c8eeea" opacity={0.92} />
 
-      {/* Continuous gas wall clad in the real Voyager 2 Uranus map — heavily
-          enhanced so the calm world still reads as textured gas */}
-      <GasWalls
-        stops={BAND_STOPS}
-        texturePath="/assets/planets/real-maps/uranus_voyager2_cylindrical.png"
-        opacity={0.97}
-        detailOpacity={0.2}
-        tint="#ecfffb"
-        hRepeat={2}
-        driftSpeed={0.003}
-        bumpScale={0.46}
-        enhance={{ saturation: 1.7, contrast: 1.6, brightness: 1.04, bandStrength: 1.35, grain: 0.75 }}
-      />
-
-      {/* Sparse bright methane-ice wisps — the only features Uranus shows */}
-      <CloudPuffs count={7} color="#ffffff" radius={34} height={10} band={8} minScale={8} maxScale={20} opacity={0.12} speed={0.01} />
+      {/* Sparse bright methane-ice wisps */}
+      <CloudPuffs count={7} color="#ffffff" radius={24} height={8} band={6} minScale={7} maxScale={16} opacity={0.16} speed={0.01} />
 
       {/* Faint methane deck drifting inside the wall */}
-      <CloudPuffs count={8} color="#e4f7f5" radius={42} height={6} band={5} minScale={20} maxScale={44} opacity={0.1} speed={0.007} />
-      <CloudPuffs count={6} color="#3f868c" radius={36} height={-7} band={4} minScale={22} maxScale={44} opacity={0.12} speed={-0.009} />
+      <CloudPuffs count={10} color="#e4f7f5" radius={32} height={6} band={5} minScale={16} maxScale={34} opacity={0.14} speed={0.007} />
+      <CloudPuffs count={8} color="#3f868c" radius={28} height={-5} band={4} minScale={18} maxScale={34} opacity={0.15} speed={-0.009} />
 
       {/* Sparse, slow methane haze */}
       <ParticleField
-        count={260}
+        count={300}
         color="#dff6f4"
-        size={0.24}
-        opacity={0.18}
-        spread={[70, 30, 70]}
-        spinSpeed={0.008}
+        size={0.18}
+        opacity={0.22}
+        spread={[44, 22, 44]}
+        spinSpeed={0.01}
       />
     </>
   )

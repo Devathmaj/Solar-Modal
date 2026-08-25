@@ -16,6 +16,197 @@ import {
   type SurfaceStyle,
 } from './worldAssets'
 
+/* ------------------------------------------------------------------ */
+/* Texture sky dome (equirectangular map on a sphere)                  */
+/* ------------------------------------------------------------------ */
+
+interface TextureSkyDomeProps {
+  texturePath: string
+  radius?: number
+  repeat?: number
+  tint?: string
+  opacity?: number
+}
+
+/**
+ * Sky dome using an actual equirectangular texture mapped on the inside
+ * of a sphere — replaces the procedural gradient shader for worlds where
+ * a real texture background is desired (airless worlds, sun interior, etc.).
+ */
+export function TextureSkyDome({
+  texturePath,
+  radius = 600,
+  repeat = 1,
+  tint = '#ffffff',
+  opacity = 1,
+}: TextureSkyDomeProps) {
+  const gl = useThree((state) => state.gl)
+  const map = useTexture(texturePath)
+
+  useEffect(() => {
+    map.colorSpace = THREE.SRGBColorSpace
+    map.wrapS = THREE.RepeatWrapping
+    map.wrapT = THREE.RepeatWrapping
+    map.repeat.set(repeat, 1)
+    map.anisotropy = gl.capabilities.getMaxAnisotropy()
+    map.needsUpdate = true
+  }, [map, repeat, gl])
+
+  return (
+    <mesh frustumCulled={false} renderOrder={-10}>
+      <sphereGeometry args={[radius, 48, 32]} />
+      <meshBasicMaterial
+        map={map}
+        color={tint}
+        side={THREE.BackSide}
+        depthWrite={false}
+        transparent={opacity < 1}
+        opacity={opacity}
+      />
+    </mesh>
+  )
+}
+
+/* ------------------------------------------------------------------ */
+/* Texture ground (actual planet surface on curved terrain)             */
+/* ------------------------------------------------------------------ */
+
+interface TextureGroundProps {
+  texturePath: string
+  size?: number
+  segments?: number
+  repeat?: number
+  displacement?: number
+  curvatureRadius?: number
+  tintA?: string
+  tintB?: string
+  bumpScale?: number
+  boulders?: BoulderSpec
+  carve?: CraterFieldOptions
+}
+
+/**
+ * Curved planetary terrain using an actual equirectangular planet texture
+ * instead of a procedural canvas. The texture is sampled as a cylindrical
+ * strip (equatorial band) for correct ground-level projection, combined
+ * with the same vertex displacement, curvature, and boulder scatter as
+ * the original RockyGround.
+ */
+export function TextureGround({
+  texturePath,
+  size = 700,
+  segments = 176,
+  repeat = 34,
+  displacement = 0.9,
+  curvatureRadius,
+  tintA = '#ffffff',
+  tintB = '#9a9a9a',
+  bumpScale = 0.035,
+  boulders,
+  carve,
+}: TextureGroundProps) {
+  const gl = useThree((state) => state.gl)
+  const map = useTexture(texturePath)
+
+  const craterFn = useMemo(
+    () => (carve ? makeCraterField(carve, size) : null),
+    [carve, size],
+  )
+
+  useEffect(() => {
+    map.colorSpace = THREE.SRGBColorSpace
+    map.wrapS = THREE.RepeatWrapping
+    map.wrapT = THREE.ClampToEdgeWrapping
+    map.anisotropy = gl.capabilities.getMaxAnisotropy()
+    map.needsUpdate = true
+  }, [map, gl])
+
+  const { geometry, material } = useMemo(() => {
+    const planeGeometry = new THREE.PlaneGeometry(size, size, segments, segments)
+    planeGeometry.rotateX(-Math.PI / 2)
+    const positionAttribute = planeGeometry.attributes.position as THREE.BufferAttribute
+
+    const colorA = new THREE.Color(tintA)
+    const colorB = new THREE.Color(tintB)
+    const colors = new Float32Array(positionAttribute.count * 3)
+    const vertexColor = new THREE.Color()
+
+    for (let i = 0; i < positionAttribute.count; i++) {
+      const x = positionAttribute.getX(i)
+      const z = positionAttribute.getZ(i)
+
+      const distance = Math.hypot(x, z)
+      const falloff = THREE.MathUtils.smoothstep(distance, 4, 26)
+
+      let height =
+        (terrainNoise(x, z) +
+          terrainNoise(x * 3.13 + 5, z * 3.07 + 9) * 0.22) *
+        displacement *
+        falloff
+
+      if (craterFn) height += craterFn(x, z) * falloff
+
+      if (curvatureRadius && curvatureRadius > 0) {
+        const r2 = x * x + z * z
+        height -= curvatureRadius - Math.sqrt(Math.max(curvatureRadius * curvatureRadius - r2, 0))
+      }
+
+      positionAttribute.setY(i, height)
+
+      const drift =
+        0.5 + 0.5 * Math.sin(x * 0.021 + 1.3) * Math.cos(z * 0.017 + 4.1)
+      vertexColor.copy(colorA).lerp(colorB, drift)
+      colors[i * 3] = vertexColor.r
+      colors[i * 3 + 1] = vertexColor.g
+      colors[i * 3 + 2] = vertexColor.b
+    }
+
+    positionAttribute.needsUpdate = true
+    planeGeometry.setAttribute('color', new THREE.BufferAttribute(colors, 3))
+    planeGeometry.computeVertexNormals()
+
+    const surfaceMap = map.clone()
+    surfaceMap.repeat.set(repeat, repeat)
+    surfaceMap.anisotropy = gl.capabilities.getMaxAnisotropy()
+    surfaceMap.needsUpdate = true
+
+    return {
+      geometry: planeGeometry,
+      material: new THREE.MeshStandardMaterial({
+        map: surfaceMap,
+        bumpMap: surfaceMap,
+        bumpScale,
+        roughness: 1,
+        metalness: 0,
+        vertexColors: true,
+      }),
+    }
+  }, [map, size, segments, repeat, displacement, curvatureRadius, tintA, tintB, bumpScale, gl, craterFn])
+
+  useEffect(
+    () => () => {
+      geometry.dispose()
+      material.dispose()
+      if (material.map) material.map.dispose()
+    },
+    [geometry, material],
+  )
+
+  return (
+    <>
+      <mesh geometry={geometry} material={material} frustumCulled={false} />
+      {boulders && (
+        <Boulders
+          spec={boulders}
+          displacement={displacement}
+          curvatureRadius={curvatureRadius}
+          craterFn={craterFn}
+        />
+      )}
+    </>
+  )
+}
+
 export type { SurfaceStyle }
 
 /* ------------------------------------------------------------------ */
@@ -776,7 +967,7 @@ function RealMapGasWalls({
   useEffect(() => {
     sourceMap.colorSpace = THREE.SRGBColorSpace
     sourceMap.wrapS = THREE.RepeatWrapping
-    sourceMap.wrapT = THREE.RepeatWrapping
+    sourceMap.wrapT = THREE.ClampToEdgeWrapping
     sourceMap.anisotropy = gl.capabilities.getMaxAnisotropy()
     sourceMap.needsUpdate = true
   }, [sourceMap, gl])

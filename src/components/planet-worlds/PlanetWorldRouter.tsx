@@ -20,7 +20,7 @@ export function PlanetWorldRouter() {
 
   return (
     <Suspense fallback={null}>
-      <PlanetWorld meta={meta}>
+      <PlanetWorld meta={meta} bodyId={worldId}>
         <World />
       </PlanetWorld>
     </Suspense>

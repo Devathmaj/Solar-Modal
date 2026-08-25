@@ -153,7 +153,7 @@ export const MERCURY_TERRAIN: PlanetTerrainConfig = {
   roughness: 0.92,
   metalness: 0.02,
   bumpScale: 0.25,
-  texturePath: '/assets/planets/surface-textures/mercury_rock_ground_2k.jpg',
+  texturePath: '/assets/planets/mercury/2k_mercury.jpg',
   microDetail: {
     rockDensity: 12,
     rockMinScale: 0.08,

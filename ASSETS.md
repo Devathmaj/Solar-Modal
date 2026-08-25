@@ -54,7 +54,7 @@ Used for solid ground terrain (tiled on curved ground planes). Sourced from Poly
 
 | Planet | Path | Source | License |
 |--------|------|--------|---------|
-| Mercury | `public/assets/planets/surface-textures/mercury_rock_ground_2k.jpg` | PolyHaven "rock_ground" | CC0 |
+| Mercury | `public/assets/planets/mercury/2k_mercury.jpg` | Solar System Scope / MESSENGER | CC BY 4.0 |
 | Earth | `public/assets/planets/surface-textures/earth_ground_2k.jpg` | PolyHaven "sand_02" | CC0 |
 | Mars | `public/assets/planets/surface-textures/mars_rocky_terrain_2k.jpg` | PolyHaven "rocky_terrain" | CC0 |
 
@@ -83,7 +83,7 @@ The terrain system provides actual 3D geometry driven by elevation data, replaci
 - **Elevation**: USGS Astrogeology / NASA MESSENGER MLA (Mercury Laser Altimeter)
   - https://astrogeology.usgs.gov/
   - MLA: ~100m/pixel elevation resolution
-- **Surface**: PolyHaven "rock_ground" (CC0), color-corrected for Mercury regolith
+- **Surface**: Solar System Scope / MESSENGER global mosaic (CC BY 4.0) — real Mercury surface imagery
 - **Terrain characteristics**: Airless, heavily cratered, sharp rims, no atmospheric scattering
 
 #### Venus

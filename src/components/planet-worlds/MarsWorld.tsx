@@ -28,7 +28,7 @@
  */
 
 import { CloudPuffs, DistantSunSprite, ParticleField, SkyDome } from './WorldEnvironment'
-import { TerrainGround, RockScatter, TerrainCracks, MARS_TERRAIN } from './terrain'
+import { TerrainGround, TerrainCracks, MARS_TERRAIN } from './terrain'
 
 /**
  * Mars: a cold butterscotch sky, rust-coloured regolith with abundant
@@ -64,16 +64,6 @@ export default function MarsWorld() {
       {/* Heightmap-driven terrain — USGS CTX DTM elevation characteristics.
           Single mesh covering the full terrain extent with heightmap displacement. */}
       <TerrainGround config={MARS_TERRAIN} />
-
-      {/* Procedural micro-detail: rover-scale rock scatter */}
-      <RockScatter
-        config={MARS_TERRAIN}
-        count={600}
-        minScale={0.08}
-        maxScale={0.6}
-        color="#a35c33"
-        visibilityRadius={150}
-      />
 
       {/* Terrain crack lines — Mars surface fracturing */}
       <TerrainCracks config={MARS_TERRAIN} count={15} />

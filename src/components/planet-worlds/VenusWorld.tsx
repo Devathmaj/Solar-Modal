@@ -22,7 +22,7 @@
 import { CloudPuffs, GasWalls, ParticleField, TextureSkyDome } from './WorldEnvironment'
 import { mirrorStops } from './worldAssets'
 import { PLANET_ENHANCE } from '../solar-system/textures'
-import { TerrainGround, RockScatter, VENUS_TERRAIN } from './terrain'
+import { TerrainGround, VENUS_TERRAIN } from './terrain'
 
 // Mirrored twin drives the seamless near-field cloud wall.
 const BAND_STOPS = mirrorStops(['#f6e2ae', '#e3bd7a', '#cf9a48', '#a8761f', '#7a5216', '#573a10'])
@@ -72,13 +72,7 @@ export default function VenusWorld() {
           visible when the camera descends through breaks in the cloud deck. */}
       <group position={[0, -30, 0]}>
         <TerrainGround config={VENUS_TERRAIN} />
-        <RockScatter
-          config={VENUS_TERRAIN}
-          count={200}
-          minScale={0.1}
-          maxScale={0.8}
-          color="#a88040"
-        />
+
       </group>
     </>
   )

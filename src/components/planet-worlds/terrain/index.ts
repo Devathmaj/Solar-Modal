@@ -22,7 +22,7 @@
 export { TerrainGrid } from './TerrainGrid'
 export { TerrainGround } from './TerrainGround'
 export { TerrainTile } from './TerrainTile'
-export { RockScatter, TerrainGrainOverlay, TerrainCracks } from './ProceduralDetail'
+export { TerrainGrainOverlay, TerrainCracks } from './ProceduralDetail'
 export {
   MERCURY_TERRAIN,
   VENUS_TERRAIN,

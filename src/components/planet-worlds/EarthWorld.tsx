@@ -19,7 +19,7 @@
  */
 
 import { CloudPuffs, DistantSunSprite, ParticleField, SkyDome } from './WorldEnvironment'
-import { TerrainGround, RockScatter, EARTH_TERRAIN } from './terrain'
+import { TerrainGround, EARTH_TERRAIN } from './terrain'
 
 /**
  * Earth: the richest world — blue scattering overhead, drifting cumulus,
@@ -55,15 +55,6 @@ export default function EarthWorld() {
 
       {/* Heightmap-driven terrain — SRTM DEM elevation characteristics */}
       <TerrainGround config={EARTH_TERRAIN} />
-
-      {/* Procedural micro-detail: scattered rocks on terrain surface */}
-      <RockScatter
-        config={EARTH_TERRAIN}
-        count={500}
-        minScale={0.05}
-        maxScale={0.45}
-        color="#8a8a76"
-      />
 
       {/* Distant cumulus bank hugging the horizon */}
       <CloudPuffs count={12} color="#f4f8ff" radius={120} height={6} band={4} minScale={70} maxScale={130} opacity={0.2} speed={0.004} />

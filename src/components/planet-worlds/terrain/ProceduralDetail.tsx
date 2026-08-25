@@ -107,7 +107,7 @@ export function RockScatter({
 
     for (let i = 0; i < count; i++) {
       const angle = Math.random() * Math.PI * 2
-      const radius = 5 + Math.random() * 250
+      const radius = 12 + Math.random() * 250
       const x = Math.cos(angle) * radius
       const z = Math.sin(angle) * radius
       const y = sampleTerrainHeight(x, z, config, craters)

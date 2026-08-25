@@ -120,7 +120,7 @@ The terrain system provides actual 3D geometry driven by elevation data, replaci
 |-----------|---------|
 | `TerrainGrid` | Manages LOD tile loading based on camera distance |
 | `TerrainTile` | Individual mesh tile with heightmap-driven vertex displacement |
-| `RockScatter` | InstancedMesh rock scatter on terrain surface |
+| ~~`RockScatter`~~ | **Removed** — procedural sphere rocks created visible decagonal polygons at ring center. Texture maps now provide surface detail. |
 | `TerrainCracks` | Visual crack lines on terrain |
 | `TerrainGrainOverlay` | Close-range sand/dust grain texture |
 
@@ -147,10 +147,10 @@ Each planet-world view now uses the terrain system for actual 3D ground geometry
 
 | World | Ground System | Sky Dome | Wall Texture |
 |-------|--------------|----------|--------------|
-| **Mercury** | TerrainGrid + RockScatter (MESSENGER elevation) | `stars_only_2k.jpg` (TextureSkyDome) | N/A |
-| **Venus** | TerrainGrid below cloud layer (Magellan radar) | `2k_venus_surface.jpg` (TextureSkyDome) | `2k_venus_atmosphere.jpg` (GasWalls) |
-| **Earth** | TerrainGrid + RockScatter (SRTM DEM) | Gradient sky (SkyDome) | N/A |
-| **Mars** | TerrainGrid + RockScatter + TerrainCracks + GrainOverlay (CTX DTM) | Gradient sky (SkyDome) | N/A |
+| **Mercury** | TerrainGround (MESSENGER elevation) | `stars_only_2k.jpg` (TextureSkyDome) | N/A |
+| **Venus** | TerrainGround below cloud layer (Magellan radar) | `2k_venus_surface.jpg` (TextureSkyDome) | `2k_venus_atmosphere.jpg` (GasWalls) |
+| **Earth** | TerrainGround (SRTM DEM) | Gradient sky (SkyDome) | N/A |
+| **Mars** | TerrainGround + TerrainCracks (CTX DTM) | Gradient sky (SkyDome) | N/A |
 | **Sun** | N/A (no ground) | `2k_sun.jpg` (TextureSkyDome) | `2k_sun.jpg` (GasWalls) |
 | **Jupiter** | N/A (gas giant) | N/A | Voyager 2 cylindrical (GasWalls) |
 | **Saturn** | N/A (gas giant) | N/A | Cassini cylindrical (GasWalls) |
@@ -176,8 +176,8 @@ Quadtree-like tile manager that loads/unloads terrain tiles based on camera dist
 ### TerrainTile
 Individual terrain mesh tile with heightmap-driven vertex displacement. Generates geometry from multi-octave noise, applies surface texture as albedo, and computes normals from heightmap gradient.
 
-### RockScatter
-GPU-instanced mesh scatter of small rocks sitting on the terrain surface. Uses InstancedMesh for single draw call per cluster.
+### ~~RockScatter~~ (Removed)
+GPU-instanced mesh scatter of small rocks sitting on the terrain surface. **Removed** because `SphereGeometry(1, 10, 8)` with vertex jitter and flattening produced visible ~10-sided decagonal polygons at the center of relay item rings. The terrain texture maps now provide sufficient surface detail without additional geometry.
 
 ### TextureSkyDome
 Loads an equirectangular texture and maps it on the inside of a sphere (`BackSide` material). Replaces the procedural gradient shader for worlds using real texture backgrounds.

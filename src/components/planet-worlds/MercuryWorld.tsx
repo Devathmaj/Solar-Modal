@@ -16,7 +16,7 @@
  */
 
 import { DistantSunSprite, StarPoints, TextureSkyDome } from './WorldEnvironment'
-import { TerrainGround, TerrainCracks, MERCURY_TERRAIN } from './terrain'
+import { TerrainGround, MERCURY_TERRAIN } from './terrain'
 
 /**
  * Mercury: airless, heavily cratered world with extreme temperature differences.
@@ -49,9 +49,6 @@ export default function MercuryWorld() {
 
       {/* Heightmap-driven terrain — MESSENGER-derived elevation characteristics */}
       <TerrainGround config={MERCURY_TERRAIN} />
-
-      {/* Terrain crack lines — airless world fracturing */}
-      <TerrainCracks config={MERCURY_TERRAIN} count={12} />
     </>
   )
 }

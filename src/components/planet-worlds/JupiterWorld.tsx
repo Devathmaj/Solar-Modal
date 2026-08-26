@@ -1,6 +1,6 @@
 import { useEffect, useMemo } from 'react'
 import * as THREE from 'three'
-import { CloudPuffs, FlickerLight, GasWalls, ParticleField } from './WorldEnvironment'
+import { CloudPuffs, GasWalls, ParticleField } from './WorldEnvironment'
 import { mirrorStops } from './worldAssets'
 
 const BAND_STOPS = mirrorStops(['#e2c493', '#bd9058', '#916031', '#66401d', '#402712', '#2c1a0c'])
@@ -53,26 +53,23 @@ export default function JupiterWorld() {
       />
 
       {/* Mid-level cloud decks for parallax inside the wall */}
-      <CloudPuffs count={14} color="#e8cfa8" radius={32} height={8} band={5} minScale={14} maxScale={30} opacity={0.18} speed={0.012} />
-      <CloudPuffs count={10} color="#7d4f27" radius={28} height={-6} band={4} minScale={16} maxScale={34} opacity={0.2} speed={-0.016} />
+      <CloudPuffs count={10} color="#e8cfa8" radius={32} height={8} band={5} minScale={14} maxScale={30} opacity={0.16} speed={0.01} />
+      <CloudPuffs count={8} color="#7d4f27" radius={28} height={-6} band={4} minScale={16} maxScale={34} opacity={0.18} speed={-0.012} />
 
       {/* Great Red Spot */}
       <sprite position={[-48, -5, -55]} scale={[50, 32, 1]}>
         <spriteMaterial map={spotTexture} transparent opacity={0.65} depthWrite={false} fog={false} />
       </sprite>
 
-      {/* Violent wind shear between layers */}
+      {/* Wind shear between layers */}
       <ParticleField
-        count={720}
+        count={480}
         color="#e8cba0"
-        size={0.22}
-        opacity={0.35}
-        spread={[50, 24, 50]}
-        spinSpeed={-0.045}
+        size={0.2}
+        opacity={0.28}
+        spread={[48, 22, 48]}
+        spinSpeed={-0.02}
       />
-
-      {/* Deep-atmosphere lightning */}
-      <FlickerLight color="#ffd9a0" rate={1.3} intensity={105} position={[0, -18, -45]} />
     </>
   )
 }

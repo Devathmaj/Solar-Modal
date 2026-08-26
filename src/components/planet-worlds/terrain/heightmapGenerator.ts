@@ -192,8 +192,20 @@ export function generateTileHeightmap(
 }
 
 /**
+ * Deterministic hash-based random — returns value in [0, 1].
+ * Same seed always produces the same value.
+ */
+function seededRandom(seed: number): number {
+  let h = (seed * 374761393 + 1013904223) | 0
+  h = (h ^ (h >> 13)) * 1274126177
+  h = h ^ (h >> 16)
+  return (h & 0x7fffffff) / 0x7fffffff
+}
+
+/**
  * Generate a crater field for a terrain region.
- * Craters are placed randomly but avoid the center content-anchor area.
+ * Craters are placed deterministically using seeded random — same config
+ * always produces the same crater layout.
  */
 export function generateCraters(config: PlanetTerrainConfig): Crater[] {
   if (!config.craters) return []
@@ -204,15 +216,17 @@ export function generateCraters(config: PlanetTerrainConfig): Crater[] {
   for (let i = 0; i < count; i++) {
     let x = 0
     let z = 0
+    let attempt = 0
     do {
-      x = (Math.random() - 0.5) * config.terrainRadius * 1.4
-      z = (Math.random() - 0.5) * config.terrainRadius * 1.4
+      x = (seededRandom(i * 1000 + attempt * 7 + 1) - 0.5) * config.terrainRadius * 1.4
+      z = (seededRandom(i * 1000 + attempt * 7 + 2) - 0.5) * config.terrainRadius * 1.4
+      attempt++
     } while (Math.hypot(x, z) < 20)
 
     craters.push({
       x,
       z,
-      r: minRadius + Math.random() * (maxRadius - minRadius),
+      r: minRadius + seededRandom(i * 1000 + 3) * (maxRadius - minRadius),
     })
   }
 
